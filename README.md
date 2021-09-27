@@ -120,7 +120,7 @@ var bottomSheetController = TiBottomSheetControllerModule.createBottomSheet({
 	widthFollowsPreferredContentSizeWhenEdgeAttached:false, // A Boolean value that determines whether the sheet's width matches its view controller's preferred content size.
 	prefersGrabberVisible:true, // A Boolean value that determines whether the sheet shows a grabber at the top.
 	largestUndimmedDetentIdentifier:'medium', // medium or large - if not set, it is full dimmed depending on activated detents - The largest detent that doesn’t dim the view underneath the sheet.
-	contentView: bottomView. // View (any kind), Window or NavigationWindow
+	contentView: bottomView // View (any kind), Window or NavigationWindow
 });
 
 bottomSheetController.addEventListener('dismissing', function() {
