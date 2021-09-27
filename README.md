@@ -1,17 +1,7 @@
-<<<<<<< HEAD
 # Titanium BottomSheetController iOS Module (iOS 15+)
-=======
-# ti.popover (NEW)
->>>>>>> main
 
 <img src="./demo.gif" width="293" height="634" alt="Example" />
 
-<<<<<<< HEAD
-=======
-Popover for iOS (Titanium Module) + more .... see in the example (most code from Ti SDK)
-
-min Ti SDK 9.3.2
->>>>>>> main
 
 ## Methods
 
@@ -30,7 +20,6 @@ min Ti SDK 9.3.2
 
 ## Properties
 
-<<<<<<< HEAD
 ### `detents:{large:bool,medium:bool}`
 #### The object of heights where a sheet can rest.
 *if not set, default to 'medium' only*
@@ -163,33 +152,3 @@ MIT
 ## Author
 
 Marc Bender
-=======
-	var TiPopover = require('ti.popover');
-
-	var popover = TiPopover.createPopover({
-	    arrowDirection:TiPopover.POPOVER_ARROW_DIRECTION_DOWN,
-	    backgroundColor:'rgba(195,198,204,0.4)',
-	    contentView:SOME_VIEW
-	  });
-
-
-	 popover.show({ 
-          view: REFERENCE_VIEW,
-          backgroundColor: 'rgba(0,0,0,0.2)',
-          blurBackground: true,
-          blurEffect: TiPopover.BLUR_EFFECT_STYLE_LIGHT,
-          animated: true
-        });	
-
-	popover.addEventListener('closed', function() {
-		// return nothing just the event
-		// this event will get fired when manually do 
-		// popover.hide({animated:true/false});
-		// useful when you did some action in your contentView and do hide the popover therefore manually
-	});
-
-	popover.addEventListener('hide', function() {
-		// return nothing just the event
-		// this event will get fired when outside of popover clicked....
-	});
->>>>>>> main
