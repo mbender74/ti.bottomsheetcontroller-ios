@@ -7,7 +7,8 @@
 
 ### `createBottomSheet({properties}) `
 ### `show({animated:bool}) `
-### `hide({animated:bool}) `
+### `hide({animated:bool}) ` 
+manually hide the controller, per exaple if to did any action in the content view
 ### `selectedDetentIdentifier` return STRING - selectedDetentIdentifier (medium,large or none)
 
 ## Events
