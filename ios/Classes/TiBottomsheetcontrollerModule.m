@@ -6,12 +6,15 @@
  */
 
 #import "TiBottomsheetcontrollerModule.h"
-#import "TiBottomsheetcontrollerProxy.h"
 #import "TiBase.h"
 #import "TiHost.h"
 #import "TiUtils.h"
+#import "TiBottomsheetcontrollerProxy.h"
 
 @implementation TiBottomsheetcontrollerModule
+
+
+id myBottomSheet = nil;
 
 #pragma mark Internal
 
@@ -27,19 +30,51 @@
   return @"ti.bottomsheetcontroller";
 }
 
-#pragma mark Public API's
+#pragma mark Lifecycle
 
-- (id)createBottomSheet:(id)args
-{   
-    if ([TiUtils isIOSVersionOrGreater:@"15.0"] || [TiUtils isMacOS] ) {
-        if (@available(iOS 15, macCatalyst 15, *)) {
-            return [[TiBottomsheetcontrollerProxy alloc] _initWithPageContext:[self executionContext] args:args];
-        }
+- (void)startup
+{
+  // This method is called when the module is first loaded
+  // You *must* call the superclass
+  [super startup];
+    NSLog(@"[DEBUG] %@ loaded", self);
+}
+
+
+-(void)shutdown:(id)sender
+{
+    // this method is called when the module is being unloaded
+    // typically this is during shutdown. make sure you don't do too
+    // much processing here or the app will be quit forceably
+
+    // you *must* call the superclass
+    [super shutdown:sender];
+}
+
+#pragma mark Public API
+- (void)cleanup
+{
+  myBottomSheet = nil;
+   // NSLog(@"cleanup");
+}
+
+- (id)createBottomSheet:(id)args{
+   // NSLog(@"createBottomSheet ");
+    
+    // [self performSelector:@selector(updateContentViewWithSafeAreaInsets:) withObject:insetsValue afterDelay:.05];
+
+    if (myBottomSheet == nil){
+        myBottomSheet = [[TiBottomsheetcontrollerProxy alloc] _initWithPageContext:[self executionContext] args:args];
+        [myBottomSheet bottomSheetModule:self];
+        return myBottomSheet;
     }
     else {
-        [self throwException:@"this API is not available on non iOS 15+" subreason:nil location:CODELOCATION];
-        return nil;
+       // NSLog(@"is open ");
+       // [self throwException:@"BottomSheet is already presented" subreason:nil location:CODELOCATION];
+        //[myBottomSheet hide:nil];
+        return myBottomSheet;
     }
+ 
 }
 
 @end

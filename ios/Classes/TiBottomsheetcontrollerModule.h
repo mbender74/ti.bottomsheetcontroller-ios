@@ -6,7 +6,8 @@
  */
 
 #import "TiModule.h"
+#import <TitaniumKit/TiApp.h>
 
-@interface TiBottomsheetcontrollerModule : TiModule
-
+@interface TiBottomsheetcontrollerModule : TiModule 
+- (void)cleanup;
 @end
