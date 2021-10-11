@@ -1,4 +1,4 @@
-# Titanium BottomSheetController iOS Module (iOS 15+) - UISheetPresentationController
+# Titanium BottomSheetController iOS Module (iOS 15+ and fallback version for older iOS) - UISheetPresentationController
 
 <img src="./demo.gif" width="293" height="634" alt="Example" />
 
