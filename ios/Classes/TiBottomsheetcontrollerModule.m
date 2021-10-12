@@ -28,6 +28,11 @@ id myBottomSheet = nil;
   return @"ti.bottomsheetcontroller";
 }
 
+- (void)cleanup
+{
+  myBottomSheet = nil;
+}
+
 #pragma mark Public API
 
 - (id)createBottomSheet:(id)args{

@@ -339,6 +339,7 @@ UIView *closeButtonView = nil;
                           
                        //   NSLog(@"BottomSheet closed fired");
                           
+                          [bottomSheetModule cleanup];
                           popoverInitialized = NO;
 
                           bottomSheet = nil;
@@ -403,6 +404,7 @@ UIView *closeButtonView = nil;
                                 [self forgetSelf];
                                 [self release];
                                   //  [viewController.view removeFromSuperview];
+                                    [bottomSheetModule cleanup];
                                     scrollView = nil;
                                     popoverInitialized = NO;
                                     contentViewProxy = nil;
@@ -1194,6 +1196,8 @@ UIView *closeButtonView = nil;
 {
    // NSLog(@"presentationControllerDidDismiss ");
   //  DebugLog(@"BottomSheet presentationControllerDidDismiss");
+  [bottomSheetModule cleanup];
+
     if (eventFired == NO){
         eventFired = YES;
         [self fireEvent:@"closed" withObject:nil];
