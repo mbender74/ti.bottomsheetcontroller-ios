@@ -176,15 +176,8 @@ UIView *closeButtonView = nil;
     RELEASE_TO_NIL(contentViewProxy);
   }
   contentViewProxy = [(TiViewProxy *)value retain];
-
-
-    if (defaultsToNonSystemSheet == NO){
-           // NSLog(@"nonSystemSheet == false ");
-            [contentViewProxy replaceValue:[NSNumber numberWithFloat:24] forKey:@"top" notification:NO];
-    }
     
-    [self replaceValue:contentViewProxy forKey:@"contentView" notification:NO];
-
+  [self replaceValue:contentViewProxy forKey:@"contentView" notification:NO];
 }
 
 
