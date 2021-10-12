@@ -9,5 +9,5 @@
 #import <TitaniumKit/TiApp.h>
 
 @interface TiBottomsheetcontrollerModule : TiModule 
-- (void)cleanup;
+
 @end

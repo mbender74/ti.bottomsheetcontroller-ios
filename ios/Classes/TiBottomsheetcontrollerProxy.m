@@ -17,7 +17,6 @@
 #import <libkern/OSAtomic.h>
 #import "BottomSheetViewController.h"
 #import "TiBottomsheetcontrollerModule.h"
-#import "TouchDelayGestureRecognizer.h"
 
 TiBottomsheetcontrollerProxy *currentTiBottomSheet;
 BottomSheetViewController *customBottomSheet;
@@ -46,8 +45,6 @@ UIView *closeButtonView = nil;
 
 - (void)dealloc
 {
-    [super dealloc];
-   
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
     RELEASE_TO_NIL(viewController);
@@ -61,6 +58,11 @@ UIView *closeButtonView = nil;
     #endif
     RELEASE_TO_NIL(customBottomSheet);
     RELEASE_TO_NIL(bottomSheet);
+    
+    [_detents release];
+    [_largestUndimmedDetentIdentifier release];
+  
+    [super dealloc];
 }
 
 #pragma mark Public API
@@ -585,8 +587,6 @@ UIView *closeButtonView = nil;
     [contentViewProxy reposition];
      // NSLog(@"closeButtonProxy %@",closeButtonProxy);
 
-      CGSize closeButtonSize = [self buttonSize];
-
       if (closeButtonProxy){
           [closeButtonProxy windowWillOpen];
           [closeButtonProxy reposition];
@@ -609,35 +609,6 @@ UIView *closeButtonView = nil;
     });
   }
 }
-
-
-
-- (CGSize)buttonSize
-{
-#ifndef TI_USE_AUTOLAYOUT
-  CGSize screenSize = [[UIScreen mainScreen] bounds].size;
-  if (poBWidth.type != TiDimensionTypeUndefined) {
-    if (closeButtonProxy != nil) {
-      [closeButtonProxy layoutProperties]->width.type = poBWidth.type;
-      [closeButtonProxy layoutProperties]->width.value = poBWidth.value;
-    }
-    poBWidth = TiDimensionUndefined;
-  }
-
-  if (poBHeight.type != TiDimensionTypeUndefined) {
-    if (closeButtonProxy != nil) {
-      [closeButtonProxy layoutProperties]->height.type = poBHeight.type;
-      [closeButtonProxy layoutProperties]->height.value = poBHeight.value;
-    }
-    poBHeight = TiDimensionUndefined;
-  }
-    
-  return SizeConstraintViewWithSizeAddingResizing([closeButtonProxy layoutProperties], closeButtonProxy, screenSize, NULL);
-#else
-  return CGSizeZero;
-#endif
-}
-
 
 - (CGSize)contentSize
 {
@@ -969,6 +940,8 @@ UIView *closeButtonView = nil;
             else {
                 [containerView insertSubview:handle aboveSubview:controllerView_];
             }
+
+            [handle release];
         }
 
         
