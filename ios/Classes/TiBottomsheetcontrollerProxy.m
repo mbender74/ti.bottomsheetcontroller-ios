@@ -617,18 +617,22 @@ UIView *closeButtonView = nil;
 #ifndef TI_USE_AUTOLAYOUT
   CGSize screenSize = [[UIScreen mainScreen] bounds].size;
   if (poBWidth.type != TiDimensionTypeUndefined) {
-    [closeButtonProxy layoutProperties]->width.type = poBWidth.type;
-    [closeButtonProxy layoutProperties]->width.value = poBWidth.value;
+    if (closeButtonProxy != nil) {
+      [closeButtonProxy layoutProperties]->width.type = poBWidth.type;
+      [closeButtonProxy layoutProperties]->width.value = poBWidth.value;
+    }
     poBWidth = TiDimensionUndefined;
   }
 
   if (poBHeight.type != TiDimensionTypeUndefined) {
-    [closeButtonProxy layoutProperties]->height.type = poBHeight.type;
-    [closeButtonProxy layoutProperties]->height.value = poBHeight.value;
+    if (closeButtonProxy != nil) {
+      [closeButtonProxy layoutProperties]->height.type = poBHeight.type;
+      [closeButtonProxy layoutProperties]->height.value = poBHeight.value;
+    }
     poBHeight = TiDimensionUndefined;
   }
     
-    return SizeConstraintViewWithSizeAddingResizing([closeButtonProxy layoutProperties], closeButtonProxy, screenSize, NULL);
+  return SizeConstraintViewWithSizeAddingResizing([closeButtonProxy layoutProperties], closeButtonProxy, screenSize, NULL);
 #else
   return CGSizeZero;
 #endif
