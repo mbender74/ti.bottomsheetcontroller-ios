@@ -912,11 +912,10 @@ UIView *closeButtonView = nil;
         containerView.backgroundColor =  [[TiUtils colorValue:[self valueForKey:@"backgroundColor"]] _color];
 
         if ([TiUtils boolValue:[self valueForKey:@"prefersGrabberVisible"] def:YES]){
-            CGRect handleViewFrame = CGRectMake( 0, 0, 44, 6);
+            CGRect handleViewFrame = CGRectMake( 0, 0, 36, 5);
             UIView *handle = [[UIView alloc] initWithFrame:handleViewFrame];
-            handle.backgroundColor = [UIColor blackColor];
+            handle.backgroundColor = [self adaptiveGrabberColor];
             handle.layer.cornerRadius = 4;
-            handle.alpha = 0.4;
             CGSize size = containerView.frame.size;
             [handle setCenter:CGPointMake(size.width/2, 10)];
 
@@ -972,6 +971,16 @@ UIView *closeButtonView = nil;
     
 }
 
+- (UIColor *)adaptiveGrabberColor
+{
+  // #5a5a5f
+  if (TiApp.controller.traitCollection.userInterfaceStyle == UIDocumentBrowserUserInterfaceStyleDark) {
+    return [UIColor colorWithRed:0.35 green:0.35 blue:0.37 alpha:1.0];
+  }
+
+  // #c5c5c7
+  return [UIColor colorWithRed:0.77 green:0.77 blue:0.78 alpha:1.0];
+}
 
 - (void)disableScrolling:(UIView *)view
 {
