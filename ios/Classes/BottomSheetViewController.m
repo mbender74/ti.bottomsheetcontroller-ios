@@ -100,10 +100,6 @@ UIEdgeInsets safeAreaInset;
     
     if ([myParentProxy valueForKey:@"detents"]){
         userDetents = [myParentProxy valueForKey:@"detents"];
-
-        NSMutableArray *detentsOfController = [NSMutableArray arrayWithCapacity:2];
-
-        //[TiUtils boolValue:[self valueForKey:@"prefersEdgeAttachedInCompactHeight"]
         
         if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
             maxPosition = fullViewYPosition;
@@ -243,7 +239,6 @@ UIEdgeInsets safeAreaInset;
 
     
     if (customSheetScrollView){
-        CGFloat width = self.view.frame.size.width;
         CGFloat height = self.view.frame.size.height;
         CGFloat bottomIntent = safeAreaInset.bottom;
         CGFloat topInset = customSheetScrollView.contentInset.top;

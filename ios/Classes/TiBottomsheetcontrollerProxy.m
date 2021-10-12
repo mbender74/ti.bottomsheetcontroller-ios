@@ -17,7 +17,6 @@
 #import <libkern/OSAtomic.h>
 #import "BottomSheetViewController.h"
 #import "TiBottomsheetcontrollerModule.h"
-#import "TouchDelayGestureRecognizer.h"
 
 TiBottomsheetcontrollerProxy *currentTiBottomSheet;
 BottomSheetViewController *customBottomSheet;
@@ -46,8 +45,6 @@ UIView *closeButtonView = nil;
 
 - (void)dealloc
 {
-    [super dealloc];
-   
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
     RELEASE_TO_NIL(viewController);
@@ -61,6 +58,11 @@ UIView *closeButtonView = nil;
     #endif
     RELEASE_TO_NIL(customBottomSheet);
     RELEASE_TO_NIL(bottomSheet);
+    
+    [_detents release];
+    [_largestUndimmedDetentIdentifier release];
+  
+    [super dealloc];
 }
 
 #pragma mark Public API
@@ -174,15 +176,8 @@ UIView *closeButtonView = nil;
     RELEASE_TO_NIL(contentViewProxy);
   }
   contentViewProxy = [(TiViewProxy *)value retain];
-
-
-    if (defaultsToNonSystemSheet == NO){
-           // NSLog(@"nonSystemSheet == false ");
-            [contentViewProxy replaceValue:[NSNumber numberWithFloat:24] forKey:@"top" notification:NO];
-    }
     
-    [self replaceValue:contentViewProxy forKey:@"contentView" notification:NO];
-
+  [self replaceValue:contentViewProxy forKey:@"contentView" notification:NO];
 }
 
 
@@ -298,7 +293,7 @@ UIView *closeButtonView = nil;
           }
           else {
 
-              NSLog(@"BottomSheet is showing. Ignoring call") return;
+              NSLog(@"[ERROR] BottomSheet is showing. Ignoring call") return;
               
 //              TiThreadPerformOnMainThread(
 //                  ^{
@@ -492,9 +487,9 @@ UIView *closeButtonView = nil;
 - (void)cleanup
 {
   currentTiBottomSheet = nil;
-    NSLog(@"cleanup 1 ");
+    // NSLog(@"cleanup 1 ");
     
-    NSLog(@"cleanup 2 ");
+    // NSLog(@"cleanup 2 ");
 
     
   [contentViewProxy setProxyObserver:nil];
@@ -504,7 +499,7 @@ UIView *closeButtonView = nil;
  // [self fireEvent:@"hide" withObject:nil]; //Checking for listeners are done by fireEvent anyways.
 //  [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillChangeStatusBarOrientationNotification object:nil];
   [contentViewProxy windowDidClose];
-    NSLog(@"cleanup 3 ");
+    // NSLog(@"cleanup 3 ");
 
   if ([contentViewProxy isKindOfClass:[TiWindowProxy class]]) {
     UIView *topWindowView = [[[TiApp app] controller] topWindowProxyView];
@@ -515,12 +510,12 @@ UIView *closeButtonView = nil;
       }
     }
   }
-    NSLog(@"cleanup 4 ");
+    // NSLog(@"cleanup 4 ");
 
   [self forgetSelf];
   [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
   RELEASE_TO_NIL(viewController);
-    NSLog(@"cleanup 5 ");
+    // NSLog(@"cleanup 5 ");
 
   [self performSelector:@selector(release) withObject:nil afterDelay:0.5];
   [bottomSheetclosingCondition lock];
@@ -528,17 +523,17 @@ UIView *closeButtonView = nil;
   [bottomSheetclosingCondition signal];
   [bottomSheetclosingCondition unlock];
 
-    NSLog(@"cleanup 6 ");
+    // NSLog(@"cleanup 6 ");
 
     popoverInitialized = NO;
     currentTiBottomSheet = nil;
-    NSLog(@"cleanup 7 ");
+    // NSLog(@"cleanup 7 ");
 
     RELEASE_TO_NIL(bottomSheetclosingCondition);
     RELEASE_TO_NIL(contentViewProxy);
    // bottomSheet.delegate = nil;
     //RELEASE_TO_NIL(bottomSheet);
-    NSLog(@"cleanup 8 ");
+    // NSLog(@"cleanup 8 ");
 
 }
 
@@ -585,8 +580,6 @@ UIView *closeButtonView = nil;
     [contentViewProxy reposition];
      // NSLog(@"closeButtonProxy %@",closeButtonProxy);
 
-      CGSize closeButtonSize = [self buttonSize];
-
       if (closeButtonProxy){
           [closeButtonProxy windowWillOpen];
           [closeButtonProxy reposition];
@@ -610,31 +603,6 @@ UIView *closeButtonView = nil;
   }
 }
 
-
-
-- (CGSize)buttonSize
-{
-#ifndef TI_USE_AUTOLAYOUT
-  CGSize screenSize = [[UIScreen mainScreen] bounds].size;
-  if (poBWidth.type != TiDimensionTypeUndefined) {
-    [closeButtonProxy layoutProperties]->width.type = poBWidth.type;
-    [closeButtonProxy layoutProperties]->width.value = poBWidth.value;
-    poBWidth = TiDimensionUndefined;
-  }
-
-  if (poBHeight.type != TiDimensionTypeUndefined) {
-    [closeButtonProxy layoutProperties]->height.type = poBHeight.type;
-    [closeButtonProxy layoutProperties]->height.value = poBHeight.value;
-    poBHeight = TiDimensionUndefined;
-  }
-    
-    return SizeConstraintViewWithSizeAddingResizing([closeButtonProxy layoutProperties], closeButtonProxy, screenSize, NULL);
-#else
-  return CGSizeZero;
-#endif
-}
-
-
 - (CGSize)contentSize
 {
 #ifndef TI_USE_AUTOLAYOUT
@@ -651,15 +619,8 @@ UIView *closeButtonView = nil;
     poHeight = TiDimensionUndefined;
   }
 
-    if (defaultsToNonSystemSheet == NO && useNavController == NO){
-        [contentViewProxy layoutProperties]->top.type = TiDimensionTypeDip;
-        [contentViewProxy layoutProperties]->top.value = 24;
-    }
-    
  TiBottomSheetContentSize = SizeConstraintViewWithSizeAddingResizing([contentViewProxy layoutProperties], contentViewProxy, screenSize, NULL);
-    
-   // TiBottomSheetContentSize.height = TiBottomSheetContentSize.height + 24;
-    
+
   return TiBottomSheetContentSize;
 #else
   return CGSizeZero;
@@ -903,7 +864,7 @@ UIView *closeButtonView = nil;
                 const CGFloat widthOfScrollContainer = containerView.frame.size.width;
             
             
-            scrollView = [[ContentScrollView alloc] initWithFrame:CGRectMake( 0, 24, widthOfScrollContainer, heightOfScrollContainer)];
+            scrollView = [[ContentScrollView alloc] initWithFrame:CGRectMake( 0, 0, widthOfScrollContainer, heightOfScrollContainer)];
             scrollView.dismissing = NO;
             scrollView.delegate = self;
 //                UITapGestureRecognizer *panScrollView =
@@ -951,11 +912,10 @@ UIView *closeButtonView = nil;
         containerView.backgroundColor =  [[TiUtils colorValue:[self valueForKey:@"backgroundColor"]] _color];
 
         if ([TiUtils boolValue:[self valueForKey:@"prefersGrabberVisible"] def:YES]){
-            CGRect handleViewFrame = CGRectMake( 0, 0, 44, 6);
+            CGRect handleViewFrame = CGRectMake( 0, 0, 36, 5);
             UIView *handle = [[UIView alloc] initWithFrame:handleViewFrame];
-            handle.backgroundColor = [UIColor blackColor];
+            handle.backgroundColor = [self adaptiveGrabberColor];
             handle.layer.cornerRadius = 4;
-            handle.alpha = 0.4;
             CGSize size = containerView.frame.size;
             [handle setCenter:CGPointMake(size.width/2, 10)];
 
@@ -965,6 +925,8 @@ UIView *closeButtonView = nil;
             else {
                 [containerView insertSubview:handle aboveSubview:controllerView_];
             }
+
+            [handle release];
         }
 
         
@@ -1009,6 +971,16 @@ UIView *closeButtonView = nil;
     
 }
 
+- (UIColor *)adaptiveGrabberColor
+{
+  // #5a5a5f
+  if (TiApp.controller.traitCollection.userInterfaceStyle == UIDocumentBrowserUserInterfaceStyleDark) {
+    return [UIColor colorWithRed:0.35 green:0.35 blue:0.37 alpha:1.0];
+  }
+
+  // #c5c5c7
+  return [UIColor colorWithRed:0.77 green:0.77 blue:0.78 alpha:1.0];
+}
 
 - (void)disableScrolling:(UIView *)view
 {
@@ -1233,7 +1205,7 @@ UIView *closeButtonView = nil;
 {
    // NSLog(@"presentationControllerDidDismiss ");
   //  DebugLog(@"BottomSheet presentationControllerDidDismiss");
-    [bottomSheetModule cleanup];
+  [bottomSheetModule cleanup];
 
     if (eventFired == NO){
         eventFired = YES;

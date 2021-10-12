@@ -26,8 +26,6 @@
 		24DD6CFA1134B3F500162E58 /* TiBottomsheetcontrollerModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 24DD6CF81134B3F500162E58 /* TiBottomsheetcontrollerModule.m */; };
 		24DE9E1111C5FE74003F90F6 /* TiBottomsheetcontrollerModuleAssets.h in Headers */ = {isa = PBXBuildFile; fileRef = 24DE9E0F11C5FE74003F90F6 /* TiBottomsheetcontrollerModuleAssets.h */; };
 		24DE9E1211C5FE74003F90F6 /* TiBottomsheetcontrollerModuleAssets.m in Sources */ = {isa = PBXBuildFile; fileRef = 24DE9E1011C5FE74003F90F6 /* TiBottomsheetcontrollerModuleAssets.m */; };
-		2C20742A270FD9680075E87C /* TouchDelayGestureRecognizer.h in Headers */ = {isa = PBXBuildFile; fileRef = 2C207428270FD9680075E87C /* TouchDelayGestureRecognizer.h */; };
-		2C20742B270FD9680075E87C /* TouchDelayGestureRecognizer.m in Sources */ = {isa = PBXBuildFile; fileRef = 2C207429270FD9680075E87C /* TouchDelayGestureRecognizer.m */; };
 		2CCB47082702A0BE007988E2 /* BottomSheetViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = 2CCB47062702A0BE007988E2 /* BottomSheetViewController.h */; };
 		2CCB47092702A0BE007988E2 /* BottomSheetViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2CCB47072702A0BE007988E2 /* BottomSheetViewController.m */; };
 		2CCBDD6726E3FADF0078F941 /* TiBottomsheetcontrollerProxy.h in Headers */ = {isa = PBXBuildFile; fileRef = 2CCBDD6526E3FADF0078F941 /* TiBottomsheetcontrollerProxy.h */; };
@@ -54,8 +52,6 @@
 		24DE9E0F11C5FE74003F90F6 /* TiBottomsheetcontrollerModuleAssets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TiBottomsheetcontrollerModuleAssets.h; path = Classes/TiBottomsheetcontrollerModuleAssets.h; sourceTree = "<group>"; };
 		24DE9E1011C5FE74003F90F6 /* TiBottomsheetcontrollerModuleAssets.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TiBottomsheetcontrollerModuleAssets.m; path = Classes/TiBottomsheetcontrollerModuleAssets.m; sourceTree = "<group>"; };
 		2C207427270F69C40075E87C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		2C207428270FD9680075E87C /* TouchDelayGestureRecognizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TouchDelayGestureRecognizer.h; path = Classes/TouchDelayGestureRecognizer.h; sourceTree = "<group>"; };
-		2C207429270FD9680075E87C /* TouchDelayGestureRecognizer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TouchDelayGestureRecognizer.m; path = Classes/TouchDelayGestureRecognizer.m; sourceTree = "<group>"; };
 		2CCB47062702A0BE007988E2 /* BottomSheetViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BottomSheetViewController.h; path = Classes/BottomSheetViewController.h; sourceTree = "<group>"; };
 		2CCB47072702A0BE007988E2 /* BottomSheetViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BottomSheetViewController.m; path = Classes/BottomSheetViewController.m; sourceTree = "<group>"; };
 		2CCBDD6526E3FADF0078F941 /* TiBottomsheetcontrollerProxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TiBottomsheetcontrollerProxy.h; path = Classes/TiBottomsheetcontrollerProxy.h; sourceTree = "<group>"; };
@@ -90,7 +86,6 @@
 		0867D691FE84028FC02AAC07 /* ti.popover */ = {
 			isa = PBXGroup;
 			children = (
-				2C207427270F69C40075E87C /* Assets.xcassets */,
 				08FB77AEFE84172EC02AAC07 /* Classes */,
 				32C88DFF0371C24200C91783 /* Other Sources */,
 				0867D69AFE84028FC02AAC07 /* Frameworks */,
@@ -111,8 +106,6 @@
 		08FB77AEFE84172EC02AAC07 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				2C207428270FD9680075E87C /* TouchDelayGestureRecognizer.h */,
-				2C207429270FD9680075E87C /* TouchDelayGestureRecognizer.m */,
 				2CCBDD6526E3FADF0078F941 /* TiBottomsheetcontrollerProxy.h */,
 				2CCBDD6626E3FADF0078F941 /* TiBottomsheetcontrollerProxy.m */,
 				2CCB47062702A0BE007988E2 /* BottomSheetViewController.h */,
@@ -128,6 +121,7 @@
 		32C88DFF0371C24200C91783 /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				2C207427270F69C40075E87C /* Assets.xcassets */,
 				AA747D9E0F9514B9006C5449 /* TiBottomSheetController_Prefix.pch */,
 				24DD6D1B1134B66800162E58 /* titanium.xcconfig */,
 			);
@@ -145,7 +139,6 @@
 				2CCBDD6726E3FADF0078F941 /* TiBottomsheetcontrollerProxy.h in Headers */,
 				AA747D9F0F9514B9006C5449 /* TiBottomSheetController_Prefix.pch in Headers */,
 				24DD6CF91134B3F500162E58 /* TiBottomsheetcontrollerModule.h in Headers */,
-				2C20742A270FD9680075E87C /* TouchDelayGestureRecognizer.h in Headers */,
 				24DE9E1111C5FE74003F90F6 /* TiBottomsheetcontrollerModuleAssets.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -221,7 +214,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2C20742B270FD9680075E87C /* TouchDelayGestureRecognizer.m in Sources */,
 				2CCBDD6826E3FADF0078F941 /* TiBottomsheetcontrollerProxy.m in Sources */,
 				2CCB47092702A0BE007988E2 /* BottomSheetViewController.m in Sources */,
 				24DD6CFA1134B3F500162E58 /* TiBottomsheetcontrollerModule.m in Sources */,

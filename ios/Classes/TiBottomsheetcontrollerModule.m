@@ -18,45 +18,22 @@ id myBottomSheet = nil;
 
 #pragma mark Internal
 
-// This is generated for your module, please do not change it
 - (id)moduleGUID
 {
   return @"09a963f0-c30f-40eb-957a-1cff851c53fb";
 }
 
-// This is generated for your module, please do not change it
 - (NSString *)moduleId
 {
   return @"ti.bottomsheetcontroller";
 }
 
-#pragma mark Lifecycle
-
-- (void)startup
-{
-  // This method is called when the module is first loaded
-  // You *must* call the superclass
-  [super startup];
-    NSLog(@"[DEBUG] %@ loaded", self);
-}
-
-
--(void)shutdown:(id)sender
-{
-    // this method is called when the module is being unloaded
-    // typically this is during shutdown. make sure you don't do too
-    // much processing here or the app will be quit forceably
-
-    // you *must* call the superclass
-    [super shutdown:sender];
-}
-
-#pragma mark Public API
 - (void)cleanup
 {
   myBottomSheet = nil;
-   // NSLog(@"cleanup");
 }
+
+#pragma mark Public API
 
 - (id)createBottomSheet:(id)args{
    // NSLog(@"createBottomSheet ");

@@ -43,7 +43,6 @@
   @private
   TiViewProxy *contentViewProxy;
   TiViewProxy *closeButtonProxy;
-  CGRect popoverRect;
   BOOL animated;
   BOOL popoverInitialized;
   BOOL isDismissing;
