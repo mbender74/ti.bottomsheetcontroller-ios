@@ -293,7 +293,7 @@ UIView *closeButtonView = nil;
           }
           else {
 
-              NSLog(@"BottomSheet is showing. Ignoring call") return;
+              NSLog(@"[ERROR] BottomSheet is showing. Ignoring call") return;
               
 //              TiThreadPerformOnMainThread(
 //                  ^{
@@ -339,7 +339,6 @@ UIView *closeButtonView = nil;
                           
                        //   NSLog(@"BottomSheet closed fired");
                           
-                          [bottomSheetModule cleanup];
                           popoverInitialized = NO;
 
                           bottomSheet = nil;
@@ -404,7 +403,6 @@ UIView *closeButtonView = nil;
                                 [self forgetSelf];
                                 [self release];
                                   //  [viewController.view removeFromSuperview];
-                                    [bottomSheetModule cleanup];
                                     scrollView = nil;
                                     popoverInitialized = NO;
                                     contentViewProxy = nil;
@@ -487,9 +485,9 @@ UIView *closeButtonView = nil;
 - (void)cleanup
 {
   currentTiBottomSheet = nil;
-    NSLog(@"cleanup 1 ");
+    // NSLog(@"cleanup 1 ");
     
-    NSLog(@"cleanup 2 ");
+    // NSLog(@"cleanup 2 ");
 
     
   [contentViewProxy setProxyObserver:nil];
@@ -499,7 +497,7 @@ UIView *closeButtonView = nil;
  // [self fireEvent:@"hide" withObject:nil]; //Checking for listeners are done by fireEvent anyways.
 //  [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillChangeStatusBarOrientationNotification object:nil];
   [contentViewProxy windowDidClose];
-    NSLog(@"cleanup 3 ");
+    // NSLog(@"cleanup 3 ");
 
   if ([contentViewProxy isKindOfClass:[TiWindowProxy class]]) {
     UIView *topWindowView = [[[TiApp app] controller] topWindowProxyView];
@@ -510,12 +508,12 @@ UIView *closeButtonView = nil;
       }
     }
   }
-    NSLog(@"cleanup 4 ");
+    // NSLog(@"cleanup 4 ");
 
   [self forgetSelf];
   [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
   RELEASE_TO_NIL(viewController);
-    NSLog(@"cleanup 5 ");
+    // NSLog(@"cleanup 5 ");
 
   [self performSelector:@selector(release) withObject:nil afterDelay:0.5];
   [bottomSheetclosingCondition lock];
@@ -523,17 +521,17 @@ UIView *closeButtonView = nil;
   [bottomSheetclosingCondition signal];
   [bottomSheetclosingCondition unlock];
 
-    NSLog(@"cleanup 6 ");
+    // NSLog(@"cleanup 6 ");
 
     popoverInitialized = NO;
     currentTiBottomSheet = nil;
-    NSLog(@"cleanup 7 ");
+    // NSLog(@"cleanup 7 ");
 
     RELEASE_TO_NIL(bottomSheetclosingCondition);
     RELEASE_TO_NIL(contentViewProxy);
    // bottomSheet.delegate = nil;
     //RELEASE_TO_NIL(bottomSheet);
-    NSLog(@"cleanup 8 ");
+    // NSLog(@"cleanup 8 ");
 
 }
 
@@ -619,15 +617,8 @@ UIView *closeButtonView = nil;
     poHeight = TiDimensionUndefined;
   }
 
-    if (defaultsToNonSystemSheet == NO && useNavController == NO){
-        [contentViewProxy layoutProperties]->top.type = TiDimensionTypeDip;
-        [contentViewProxy layoutProperties]->top.value = 24;
-    }
-    
  TiBottomSheetContentSize = SizeConstraintViewWithSizeAddingResizing([contentViewProxy layoutProperties], contentViewProxy, screenSize, NULL);
-    
-   // TiBottomSheetContentSize.height = TiBottomSheetContentSize.height + 24;
-    
+
   return TiBottomSheetContentSize;
 #else
   return CGSizeZero;
@@ -871,7 +862,7 @@ UIView *closeButtonView = nil;
                 const CGFloat widthOfScrollContainer = containerView.frame.size.width;
             
             
-            scrollView = [[ContentScrollView alloc] initWithFrame:CGRectMake( 0, 24, widthOfScrollContainer, heightOfScrollContainer)];
+            scrollView = [[ContentScrollView alloc] initWithFrame:CGRectMake( 0, 0, widthOfScrollContainer, heightOfScrollContainer)];
             scrollView.dismissing = NO;
             scrollView.delegate = self;
 //                UITapGestureRecognizer *panScrollView =
@@ -1203,8 +1194,6 @@ UIView *closeButtonView = nil;
 {
    // NSLog(@"presentationControllerDidDismiss ");
   //  DebugLog(@"BottomSheet presentationControllerDidDismiss");
-    [bottomSheetModule cleanup];
-
     if (eventFired == NO){
         eventFired = YES;
         [self fireEvent:@"closed" withObject:nil];
