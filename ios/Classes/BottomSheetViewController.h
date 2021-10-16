@@ -26,18 +26,20 @@ static CGFloat maxPosition = 0;
 static State minState = partial;
 static CGFloat minPosition = 0;
 static UIEdgeInsets insets;
+static UIEdgeInsets scrollBarinsets;
 static bool panEnabled = YES;
 static bool panInit = NO;
 static bool panFromScrollView = NO;
-
+static CGFloat width = 0;
+static CGFloat height = 0;
+static CGRect customViewRect;
 static bool fullPositon = YES;
 static bool mediumPosition = YES;
 static bool smallPosition = YES;
 static CGFloat lastScrollViewOffsetY = 0;
 static CGFloat newSrollViewOffsetY = 0;
 static CGFloat lastTranslation = 0;
-
-
+static CGFloat yPosition = 0;
 static NSDictionary *userDetents;
 static CGFloat fullViewYPosition = 0;
 static CGFloat partialViewYPosition = 0;
@@ -49,9 +51,13 @@ static UIColor *dimmedViewBackgroundColor = nil;
 static NSString *largestUndimmedDetent = nil;
 static NSString *startDetent = nil;
 static NSString *detentString = nil;
+static Director director = up;
 @interface BottomSheetViewController : UIViewController
 @property (assign, nonatomic) State lastStatus;
 @property (assign, nonatomic) NSString *selectedDetentIdentifier;
+@property (assign, nonatomic) CGFloat fullViewYPosition;
+@property (assign, nonatomic) CGFloat partialViewYPosition;
+@property (assign, nonatomic) CGFloat expandedViewYPosition;
 
 - (id)proxyOfBottomSheetController;
 - (void)setProxyOfBottomSheetController:(id)args;
@@ -64,9 +70,10 @@ static NSString *detentString = nil;
 - (UIPanGestureRecognizer *)panRecognizer;
 - (void)panRecognizerInit:(bool)enabled;
 - (void)panFromScrollView:(bool)enabled;
-
+- (void)changeInsets:(UIView *)view;
 - (void)scrollView:(UIScrollView*)scrollview;
 - (void)lastContentOffsetY:(CGFloat)contentOffsetY;
+- (void)setupData;
 @end
 
 NS_ASSUME_NONNULL_END

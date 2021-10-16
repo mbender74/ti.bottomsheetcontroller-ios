@@ -15,7 +15,7 @@ manually hide the controller, per exaple if to did any action in the content vie
 ### `selectedDetentIdentifier`
 return STRING - selectedDetentIdentifier (medium,large or none)
 ### `changeCurrentDetent(STRING)`
-change the selectedDetentIdentifier animated ('large' or 'medium') **on 'nonSystemSheet:true' only**
+change the selectedDetentIdentifier animated ('large' or 'medium') **on 'nonSystemSheet:false' only** (iOS15+)
 
 
 ## Events
@@ -74,6 +74,27 @@ topShadow visible or not visible
 when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet
 
 **ATTENTION**: when you put a tableView, scrollView or listView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
+
+
+### `nonSystemSheetAutomaticStartPositionFromContentViewHeight:bool`
+when this property is "**true**" the nonSystemSheet opens in the height of the contentView, **all detents are disabled**,
+
+only the real height is active, 
+
+"**startDetent**" property **will be ignored**, also the "detents" property are ignored -- 
+
+if you want an undimmed background, then you need to set property "**largestUndimmedDetentIdentifier**" to "large"
+
+if NOT set defaults to false
+
+### `nonSystemSheetSmallHeight:integer`
+(optional) when set, the small detent is set to this height
+
+### `nonSystemSheetMediumHeight:integer`
+(optional) when set, the medium detent is set to this height
+
+### `nonSystemSheetLargeHeight:integer`
+(optional) when set, the large detent is set to this height
 
 
 ## Example

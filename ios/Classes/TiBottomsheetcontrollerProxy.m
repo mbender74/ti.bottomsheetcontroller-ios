@@ -17,6 +17,7 @@
 #import <libkern/OSAtomic.h>
 #import "BottomSheetViewController.h"
 #import "TiBottomsheetcontrollerModule.h"
+#import <objc/runtime.h>
 
 TiBottomsheetcontrollerProxy *currentTiBottomSheet;
 BottomSheetViewController *customBottomSheet;
@@ -35,9 +36,13 @@ UIView *closeButtonView = nil;
       poHeight = TiDimensionUndefined;
       poBWidth = TiDimensionUndefined;
       poBHeight = TiDimensionUndefined;
-       // NSLog(@"self %@",self);
       nonSystemSheetShouldScroll = NO;
       defaultsToNonSystemSheet = YES;
+      nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
+      useNavController = NO;
+      contentViewScrollingDisabled = NO;
+      UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
+      bottomSheetSafeAreaInset = [[topContainerController hostingView] safeAreaInsets];
     }
         
     return self;
@@ -48,9 +53,9 @@ UIView *closeButtonView = nil;
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
     RELEASE_TO_NIL(viewController);
-    popoverInitialized = NO;
+    bottomSheetInitialized = NO;
     currentTiBottomSheet = nil;
-
+    nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
     RELEASE_TO_NIL(bottomSheetclosingCondition);
     RELEASE_TO_NIL(contentViewProxy);
     #if !TARGET_OS_MACCATALYST
@@ -157,6 +162,18 @@ UIView *closeButtonView = nil;
 {
     nonSystemSheetShouldScroll = [TiUtils boolValue:value];
 }
+- (BOOL)nonSystemSheetShouldScroll
+{
+    return nonSystemSheetShouldScroll;
+}
+
+
+
+- (void)setNonSystemSheetAutomaticStartPositionFromContentViewHeight:(id)value
+{
+    nonSystemSheetAutomaticStartPositionFromContentViewHeight = [TiUtils boolValue:value];
+}
+
 
 - (void)setNonSystemSheet:(id)value
 {
@@ -176,20 +193,16 @@ UIView *closeButtonView = nil;
     RELEASE_TO_NIL(contentViewProxy);
   }
   contentViewProxy = [(TiViewProxy *)value retain];
-    
+  self.viewProxy = contentViewProxy;
   [self replaceValue:contentViewProxy forKey:@"contentView" notification:NO];
 }
 
 
 - (void)sendEvent:(id)args
 {
-    //NSLog(@"sendEvent");
-
     detentStatus = [TiUtils stringValue:args];
     
     if ([detentStatus isEqual:@"dismiss"]){
-
-      //  NSLog(@"sendEvent dismiss");
         if (isDismissing == NO){
             isDismissing = YES;
             [self hide:nil];
@@ -203,24 +216,10 @@ UIView *closeButtonView = nil;
                      forKey:@"selectedDetentIdentifier"];
          
             [self fireEvent:@"detentChange" withObject:event];
-
-           
-
-          //  NSLog(@"sendEvent %@",[TiUtils stringValue:args]);
         }
         if (scrollView != nil){
-          //  scrollView.scrollEnabled = YES;
-          //  scrollView.userInteractionEnabled = NO;
-
-          //  scrollView.panGestureRecognizer.enabled = YES;
             scrollView.dismissing = NO;
-           // [customBottomSheet lastContentOffsetY:-1];
-           // scrollView.panGestureRecognizer.enabled = YES;
-            [customBottomSheet panFromScrollView:NO];
-
             [customBottomSheet panRecognizerEnabled:YES];
-          //  scrollView.panGestureRecognizer.enabled = YES;
-
         }
     }
     lastDetentStatus = detentStatus;
@@ -235,23 +234,15 @@ UIView *closeButtonView = nil;
     NSString *type = [args objectAtIndex:0];
 
     if (![self _hasListeners:@"closed"] && [type isEqual:@"closed"]) {
-       // NSLog(@"BottomSheet addEventListener");
-
         [super addEventListener:args];
     }
     if (![self _hasListeners:@"opened"] && [type isEqual:@"opened"]) {
-       // NSLog(@"BottomSheet addEventListener");
-
         [super addEventListener:args];
     }
     if (![self _hasListeners:@"dismissing"] && [type isEqual:@"dismissing"]) {
-      //  NSLog(@"BottomSheet addEventListener");
-
         [super addEventListener:args];
     }
     if (![self _hasListeners:@"detentChange"] && [type isEqual:@"detentChange"]) {
-     //   NSLog(@"BottomSheet addEventListener");
-
         [super addEventListener:args];
     }
 
@@ -259,64 +250,38 @@ UIView *closeButtonView = nil;
 
 - (void)show:(id)args
 {
-    ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
-   // NSLog(@"BottomSheet show");
+  ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
+  if (bottomSheetInitialized == NO) {
+      eventFired = NO;
 
-   // dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+      if (contentViewProxy == nil) {
+          NSLog(@"[ERROR] BottomSheet no contentView set - Ignoring call") return;
+      }
+
+      [self rememberSelf];
+      [self retain];
         
-       // if (isDismissing == NO){
-           
+      animated = [TiUtils boolValue:@"animated" properties:args def:YES];
 
-            
-          if (popoverInitialized == NO) {
-            //  NSLog(@"!popoverInitialized");
-              eventFired = NO;
-
-              if (contentViewProxy == nil) {
-                  NSLog(@"[ERROR] BottomSheet no contentView set - Ignoring call") return;
-              }
-             
-
-              [self rememberSelf];
-              [self retain];
-                
-              animated = [TiUtils boolValue:@"animated" properties:args def:YES];
-
-
-              TiThreadPerformOnMainThread(
-                  ^{
-                    [self initAndShowSheetController];
-                    isDismissing = NO;
-                    popoverInitialized = YES;
-                  },
-                 YES);
-          }
-          else {
-
-              NSLog(@"[ERROR] BottomSheet is showing. Ignoring call") return;
-              
-//              TiThreadPerformOnMainThread(
-//                  ^{
-//              [currentTiBottomSheet sendEvent:@"dismiss"];
-//                  },
-//                  YES);
-              
-          }
-      //  }
-        
-  //  });
-
+      TiThreadPerformOnMainThread(
+          ^{
+            [self initAndShowSheetController];
+            isDismissing = NO;
+            bottomSheetInitialized = YES;
+          },
+        YES);
+  }
+  else {
+      NSLog(@"[ERROR] BottomSheet is showing. Ignoring call") return;
+  }
 }
 
 - (void)hide:(id)args
 {
-    //NSLog(@"BottomSheet hide");
-    
-      if (popoverInitialized == NO) {
+      if (bottomSheetInitialized == NO) {
           NSLog(@"BottomSheet is not showing. Ignoring call") return;
       }
 
-    
   TiThreadPerformOnMainThread(
       ^{
 
@@ -326,21 +291,16 @@ UIView *closeButtonView = nil;
               self->animated = [TiUtils boolValue:@"animated" properties:args def:YES];
 
               [[self viewController] dismissViewControllerAnimated:self->animated
-                                                          completion:^{
-                //  NSLog(@"BottomSheet closed iOS15+");
+                completion:^{
                       if (eventFired == NO){
                           eventFired = YES;
-                          
-                       //   NSLog(@"BottomSheet before closed fired");
-                          
+                                                    
                           if ([self _hasListeners:@"closed"]) {
                               [self fireEvent:@"closed" withObject:nil];
                           }
-                          
-                       //   NSLog(@"BottomSheet closed fired");
-                          
+                                                    
                           [bottomSheetModule cleanup];
-                          popoverInitialized = NO;
+                          bottomSheetInitialized = NO;
 
                           bottomSheet = nil;
                           viewController = nil;
@@ -349,28 +309,19 @@ UIView *closeButtonView = nil;
                           closeButtonView = nil;
                           currentTiBottomSheet = nil;
                       }
-                  
-                                                        //[self cleanup];
-                                                          }];
-
+                }];
           }
           else {
 
               if (eventFired == NO){
                   eventFired = YES;
-               //   NSLog(@"BottomSheet closed iOS < 15+");
                   [self->contentViewProxy windowWillClose];
-
-                //
-
 
                   UIColor *viewBackgroundColor = [UIColor clearColor];
                                 
-                 
-
                   [UIView animateWithDuration:0.25
                         delay:0.0
-                        options:UIViewAnimationOptionCurveEaseOut
+                        options:UIViewAnimationOptionCurveEaseIn
                         animations:^{
                           backgroundView.backgroundColor = viewBackgroundColor;
                           CGFloat width = customBottomSheet.view.frame.size.width;
@@ -380,12 +331,9 @@ UIView *closeButtonView = nil;
                         } completion:^(BOOL finished) {
                             
                             if (finished){
-                        
-                              //  NSLog(@"BottomSheet before closed fired");
-                                
+                                                        
                                 if ([self _hasListeners:@"closed"]) {
                                     [self fireEvent:@"closed" withObject:nil];
-                                  //  NSLog(@"BottomSheet closed fired");
                                 }
                                     
                                     if (useNavController) {
@@ -396,7 +344,6 @@ UIView *closeButtonView = nil;
                                     }
                                     [backgroundView removeFromSuperview];
                                     [customBottomSheet.view removeFromSuperview];
-                                  //  [[TiApp app] hideModalController:viewController animated:NO];
                                 [[NSNotificationCenter defaultCenter] removeObserver:self];
                                 currentTiBottomSheet = nil;
                                 
@@ -406,44 +353,18 @@ UIView *closeButtonView = nil;
                                   //  [viewController.view removeFromSuperview];
                                     [bottomSheetModule cleanup];
                                     scrollView = nil;
-                                    popoverInitialized = NO;
+                                    bottomSheetInitialized = NO;
                                     contentViewProxy = nil;
                                     customBottomSheet = nil;
                                     backgroundView = nil;
                                     viewController = nil;
                                     closeButtonView = nil;
-
-                                // [customBottomSheet willMoveToParentViewController:viewController];
-                                // [customBottomSheet.view removeFromSuperview];
-                                // [customBottomSheet removeFromParentViewController];
-
-                                
-                               
-
                             }
-
-
                   }];
-                 
-
-              }
-              else {
-                //  NSLog(@"BottomSheet closed Event already fired");
               }
           }
-          
-         // [self dealloc];
       },
       YES);
-   
-   
-  //  NSLog(@"BottomSheet hide done");
-
-}
-
-- (TiBottomsheetcontrollerProxy*)bottomSheet
-{
-    return bottomSheet;
 }
 
 - (void)bottomSheetModule:(id)args
@@ -451,11 +372,38 @@ UIView *closeButtonView = nil;
     bottomSheetModule = args;
 }
 
+- (UIView *)containerView
+{
+  return containerView;
+}
+
+- (CGFloat)realContentHeight
+{
+    return realContentHeight;
+}
+- (CGFloat)scrollableContentHeight
+{
+    return scrollableContentHeight;
+}
+
+
+- (BOOL)nonSystemSheetAutomaticStartPositionFromContentViewHeight
+{
+    return nonSystemSheetAutomaticStartPositionFromContentViewHeight;
+}
 
 - (UIView *)backgroundView
 {
   return backgroundView;
 }
+
+- (UIView *)contentViewOfSheet
+{
+  return contentViewOfSheet;
+}
+
+
+
 
 - (UIScrollView *)scrollView
 {
@@ -469,12 +417,10 @@ UIView *closeButtonView = nil;
     if ([contentViewProxy isKindOfClass:[TiWindowProxy class]]) {
       [(TiWindowProxy *)contentViewProxy setIsManaged:YES];
         viewController = [[(TiWindowProxy *)contentViewProxy hostingController] retain];
-      //[viewController.view addObserver:self forKeyPath:@"safeAreaInsets" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
+      [viewController.view addObserver:self forKeyPath:@"safeAreaInsets" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
     } else {
-     //
-
       viewController = [[TiViewController alloc] initWithViewProxy:contentViewProxy];
-     // [viewController.view addObserver:self forKeyPath:@"safeAreaInsets" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
+      [viewController.view addObserver:self forKeyPath:@"safeAreaInsets" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
     }
   }
   viewController.view.clipsToBounds = NO;
@@ -487,20 +433,10 @@ UIView *closeButtonView = nil;
 - (void)cleanup
 {
   currentTiBottomSheet = nil;
-    // NSLog(@"cleanup 1 ");
-    
-    // NSLog(@"cleanup 2 ");
-
-    
   [contentViewProxy setProxyObserver:nil];
   [contentViewProxy windowWillClose];
-
-  popoverInitialized = NO;
- // [self fireEvent:@"hide" withObject:nil]; //Checking for listeners are done by fireEvent anyways.
-//  [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillChangeStatusBarOrientationNotification object:nil];
+  bottomSheetInitialized = NO;
   [contentViewProxy windowDidClose];
-    // NSLog(@"cleanup 3 ");
-
   if ([contentViewProxy isKindOfClass:[TiWindowProxy class]]) {
     UIView *topWindowView = [[[TiApp app] controller] topWindowProxyView];
     if ([topWindowView isKindOfClass:[TiUIView class]]) {
@@ -510,40 +446,37 @@ UIView *closeButtonView = nil;
       }
     }
   }
-    // NSLog(@"cleanup 4 ");
-
   [self forgetSelf];
   [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
   RELEASE_TO_NIL(viewController);
-    // NSLog(@"cleanup 5 ");
-
   [self performSelector:@selector(release) withObject:nil afterDelay:0.5];
   [bottomSheetclosingCondition lock];
   isDismissing = NO;
+  nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
   [bottomSheetclosingCondition signal];
   [bottomSheetclosingCondition unlock];
-
-    // NSLog(@"cleanup 6 ");
-
-    popoverInitialized = NO;
-    currentTiBottomSheet = nil;
-    // NSLog(@"cleanup 7 ");
-
-    RELEASE_TO_NIL(bottomSheetclosingCondition);
-    RELEASE_TO_NIL(contentViewProxy);
-   // bottomSheet.delegate = nil;
-    //RELEASE_TO_NIL(bottomSheet);
-    // NSLog(@"cleanup 8 ");
-
+  bottomSheetInitialized = NO;
+  currentTiBottomSheet = nil;
+  RELEASE_TO_NIL(currentTiBottomSheet);
+  RELEASE_TO_NIL(bottomSheetclosingCondition);
+  RELEASE_TO_NIL(contentViewProxy);
+  RELEASE_TO_NIL(centerProxy);
 }
 
 - (void)initAndShowSheetController
 {
-   // NSLog(@"initAndShowSheetController ");
+  self.fixedHeight = NO;
+  self.insetsDone = NO;
+  if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
+      nonSystemSheetShouldScroll = NO;
+      self.fixedHeight = YES;
+  }
 
   deviceRotated = NO;
   currentTiBottomSheet = self;
   [contentViewProxy setProxyObserver:self];
+    scrollableContentHeight = 0;
+
   if ([contentViewProxy isKindOfClass:[TiWindowProxy class]]) {
     useNavController = YES;
 
@@ -554,72 +487,226 @@ UIView *closeButtonView = nil;
         [(id<TiWindowProtocol>)theProxy resignFocus];
       }
     }
-    [(TiWindowProxy *)contentViewProxy setIsManaged:YES];
-    [(TiWindowProxy *)contentViewProxy open:nil];
-    [(TiWindowProxy *)contentViewProxy gainFocus];
-      
-      if (closeButtonProxy){
-          [closeButtonProxy windowWillOpen];
-          [closeButtonProxy reposition];
-          [closeButtonProxy layoutChildrenIfNeeded];
 
-          CGFloat width = [closeButtonProxy autoWidthForSize:CGSizeMake(1000, 1000)];
-          CGFloat height = [closeButtonProxy autoHeightForSize:CGSizeMake(width, 0)];
-          CGRect closeButtonViewFrame = CGRectMake( 0 , 0, width, height);
-          closeButtonView = [[UIView alloc] initWithFrame:closeButtonViewFrame];
-         // NSLog(@"closeButton %f x %f",width,height);
-      }
+   [(TiWindowProxy *)contentViewProxy setIsManaged:YES];
+   [(TiWindowProxy *)contentViewProxy open:nil];
+   [(TiWindowProxy *)contentViewProxy gainFocus];
+   [(TiWindowProxy *)contentViewProxy reposition];
+   [(TiWindowProxy *)contentViewProxy layoutChildrenIfNeeded];
       
+   if (closeButtonProxy){
+      [closeButtonProxy windowWillOpen];
+      [closeButtonProxy reposition];
+      [closeButtonProxy layoutChildrenIfNeeded];
+
+      CGFloat width = [closeButtonProxy autoWidthForSize:CGSizeMake(1000, 1000)];
+      CGFloat height = [closeButtonProxy autoHeightForSize:CGSizeMake(width, 0)];
+      CGRect closeButtonViewFrame = CGRectMake( 0 , 0, width, height);
+      closeButtonView = [[UIView alloc] initWithFrame:closeButtonViewFrame];
+   }
       
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        if ([[[contentViewProxy class] description] isEqualToString:@"TiUINavigationWindowProxy"]) {
+            TiWindowProxy *childWindowProxy = [contentViewProxy valueForKey:@"window"];
+            
+            id childWindowProxyHeight = [childWindowProxy valueForUndefinedKey:@"height"];
+            if (childWindowProxyHeight && (![childWindowProxyHeight isEqual:@"SIZE"] && ![childWindowProxyHeight isEqual:@"FILL"])) {
+                self.fixedHeight = YES;
+            }
+            
+            realContentHeight = [(TiWindowProxy *)childWindowProxy view].frame.size.height;
+            if (realContentHeight >= [UIScreen mainScreen].bounds.size.height){
+                realContentHeight = realContentHeight - 200;
+            }
+        }
+        else {
+            id contentViewProxyHeight = [contentViewProxy valueForUndefinedKey:@"height"];
+            if (contentViewProxyHeight && (![contentViewProxyHeight isEqual:@"SIZE"] && ![contentViewProxyHeight isEqual:@"FILL"])) {
+                self.fixedHeight = YES;
+            }
+
+            realContentHeight = [(TiWindowProxy *)contentViewProxy view].frame.size.height;
+            if (realContentHeight >= [UIScreen mainScreen].bounds.size.height){
+                realContentHeight = realContentHeight - 200;
+            }
+        }
+               
         [self updatePopoverNow];
         [contentViewProxy windowDidOpen];
     });
   } else {
-    [contentViewProxy windowWillOpen];
-    [contentViewProxy reposition];
-     // NSLog(@"closeButtonProxy %@",closeButtonProxy);
 
-      if (closeButtonProxy){
-          [closeButtonProxy windowWillOpen];
-          [closeButtonProxy reposition];
-          [closeButtonProxy layoutChildrenIfNeeded];
 
-          CGFloat width = [closeButtonProxy autoWidthForSize:CGSizeMake(1000, 1000)];
-          CGFloat height = [closeButtonProxy autoHeightForSize:CGSizeMake(width, 0)];
-          CGRect closeButtonViewFrame = CGRectMake( 0 , 0, width, height);
-          closeButtonView = [[UIView alloc] initWithFrame:closeButtonViewFrame];
-
-         // NSLog(@"closeButton %f x %f",width,height);
+      CGSize reCalculatedSize;
+      reCalculatedSize.height = 0;
+      [contentViewProxy windowWillOpen];
+      [contentViewProxy reposition];
+      
+      id contentViewProxyHeight = [contentViewProxy valueForUndefinedKey:@"height"];
+      if (contentViewProxyHeight && (![contentViewProxyHeight isEqual:@"SIZE"] && ![contentViewProxyHeight isEqual:@"FILL"])) {
+          self.fixedHeight = YES;
       }
-    [self updateContentSize];
 
-   // NSLog(@"before updatePopoverNow ");
+      
+    if (nonSystemSheetShouldScroll == YES && defaultsToNonSystemSheet == YES){
+        if ([contentViewProxy.view isKindOfClass:[TiUIListView class]] || [contentViewProxy.view isKindOfClass:[TiUITableView class]] || [contentViewProxy.view isKindOfClass:[TiUIScrollViewImpl class]] || [NSStringFromClass([contentViewProxy.view class])  isEqual: @"TiCollectionviewCollectionView"]) {
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-      [self updatePopoverNow];
-      [contentViewProxy windowDidOpen];
-    });
+            
+            UITableView *sv = nil;
+
+            
+            if ([contentViewProxy.view isKindOfClass:[TiUITableView class]]){
+
+                object_setClass(sv, [UITableView class]);
+                sv = (UITableView *)[(TiUITableView*)contentViewProxy.view tableView];
+                if ([sv isScrollEnabled] == NO){
+                    reCalculatedSize = sv.contentSize;
+                    CGRect newFrame = contentViewProxy.view.frame;
+                    newFrame.size.height = reCalculatedSize.height;
+                    contentViewProxy.view.frame = newFrame;
+                    [contentViewProxy replaceValue:@"Ti.UI.SIZE" forKey:@"height" notification:YES];
+                }
+                else {
+                    nonSystemSheetShouldScroll = NO;
+                }
+            }
+            else if ([contentViewProxy.view isKindOfClass:[TiUIListView class]]){
+                object_setClass(sv, [UITableView class]);
+                sv = [(TiUIListView*)contentViewProxy.view tableView];
+                if ([sv isScrollEnabled] == NO){
+                    reCalculatedSize = sv.contentSize;
+
+                    [contentViewProxy replaceValue:@"false" forKey:@"canScroll" notification:YES];
+                    [contentViewProxy replaceValue:@"Ti.UI.SIZE" forKey:@"height" notification:YES];                }
+                else {
+                    nonSystemSheetShouldScroll = NO;
+                }
+            }
+            else if ([NSStringFromClass([contentViewProxy.view class])  isEqual: @"TiCollectionviewCollectionView"]){
+                reCalculatedSize = [self contentSize:contentViewProxy];
+
+            }
+            else {
+                object_setClass(sv, [TiUIScrollViewImpl class]);
+                sv = [(TiUIScrollView*)contentViewProxy.view scrollView];
+                if ([sv isScrollEnabled] == NO){
+                    reCalculatedSize = sv.contentSize;
+                    [contentViewProxy replaceValue:@"Ti.UI.SIZE" forKey:@"height" notification:YES];
+                    [contentViewProxy replaceValue:@"false" forKey:@"scrollingEnabled" notification:YES];
+                }
+                else {
+                    nonSystemSheetShouldScroll = NO;
+                }
+            }
+
+        }
+        else {
+
+            for (TiViewProxy * proxy in [contentViewProxy children]) {
+                
+                UITableView *sv = nil;
+
+                [proxy windowWillOpen];
+                [proxy reposition];
+
+                if ([proxy.view isKindOfClass:[TiUIListView class]] || [proxy.view isKindOfClass:[TiUITableView class]] || [proxy.view isKindOfClass:[TiUIScrollViewImpl class]] || [NSStringFromClass([proxy.view class])  isEqual: @"TiCollectionviewCollectionView"]) {
+
+                    if ([proxy.view isKindOfClass:[TiUITableView class]]){
+
+                        object_setClass(sv, [UITableView class]);
+                        sv = (UITableView *)[(TiUITableView*)proxy.view tableView];
+                        
+                        [proxy replaceValue:@"false" forKey:@"scrollable" notification:YES];
+                        reCalculatedSize = sv.contentSize;
+                        CGRect newFrame = proxy.view.frame;
+                        newFrame.size.height = reCalculatedSize.height;
+                        proxy.view.frame = newFrame;
+                        [proxy replaceValue:[NSNumber numberWithInt:reCalculatedSize.height] forKey:@"height" notification:YES];
+                    }
+                    else if ([proxy.view isKindOfClass:[TiUIListView class]]){
+                        object_setClass(sv, [UITableView class]);
+                        sv = [(TiUIListView*)proxy.view tableView];
+                        reCalculatedSize = sv.contentSize;
+                        [proxy replaceValue:@"false" forKey:@"canScroll" notification:YES];
+                        CGRect newFrame = proxy.view.frame;
+                        newFrame.size.height = reCalculatedSize.height;
+                        proxy.view.frame = newFrame;
+                        [proxy replaceValue:[NSNumber numberWithInt:reCalculatedSize.height] forKey:@"height" notification:YES];
+
+                    }
+                    else if ([NSStringFromClass([proxy.view class])  isEqual: @"TiCollectionviewCollectionView"]){
+                        object_setClass(sv, [UICollectionView class]);
+
+                        sv = [proxy.view performSelector:@selector(collectionView)];
+                        reCalculatedSize = [self contentSize:proxy];
+                        CGRect newFrame = proxy.view.frame;
+                        newFrame.size.height = reCalculatedSize.height;
+                        proxy.view.frame = newFrame;
+                        [proxy replaceValue:[NSNumber numberWithInt:reCalculatedSize.height] forKey:@"height" notification:YES];
+
+                    }
+                    else {
+                        object_setClass(sv, [TiUIScrollViewImpl class]);
+                        sv = [(TiUIScrollView*)proxy.view scrollView];
+                        reCalculatedSize = sv.contentSize;
+                        [proxy replaceValue:@"false" forKey:@"scrollingEnabled" notification:YES];
+                        CGRect newFrame = proxy.view.frame;
+                        newFrame.size.height = reCalculatedSize.height;
+                        proxy.view.frame = newFrame;
+                        [proxy replaceValue:[NSNumber numberWithInt:reCalculatedSize.height] forKey:@"height" notification:YES];
+                    }
+                }
+            }
+        }
+        scrollableContentHeight = reCalculatedSize.height;
+    }
+    else {
+        scrollableContentHeight = 0;
+    }
+      
+    if (closeButtonProxy){
+      [closeButtonProxy windowWillOpen];
+      [closeButtonProxy reposition];
+      [closeButtonProxy layoutChildrenIfNeeded];
+      CGFloat width = [closeButtonProxy autoWidthForSize:CGSizeMake(1000, 1000)];
+      CGFloat height = [closeButtonProxy autoHeightForSize:CGSizeMake(width, 0)];
+      CGRect closeButtonViewFrame = CGRectMake( 0 , 0, width, height);
+      closeButtonView = [[UIView alloc] initWithFrame:closeButtonViewFrame];
+    }
+
+      realContentHeight = [self updateContentSizeWithReturn].height;
+      
+      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+              if (realContentHeight >= [UIScreen mainScreen].bounds.size.height){
+                  realContentHeight = realContentHeight - 200;
+              }
+              
+              if (scrollableContentHeight == 0){
+                  scrollableContentHeight = realContentHeight;
+              }
+            [self updatePopoverNow];
+            [contentViewProxy windowDidOpen];
+      });
   }
 }
 
-- (CGSize)contentSize
+- (CGSize)contentSize:(TiViewProxy *)thisProxy
 {
 #ifndef TI_USE_AUTOLAYOUT
   CGSize screenSize = [[UIScreen mainScreen] bounds].size;
   if (poWidth.type != TiDimensionTypeUndefined) {
-    [contentViewProxy layoutProperties]->width.type = poWidth.type;
-    [contentViewProxy layoutProperties]->width.value = poWidth.value;
+    [thisProxy layoutProperties]->width.type = poWidth.type;
+    [thisProxy layoutProperties]->width.value = poWidth.value;
     poWidth = TiDimensionUndefined;
   }
 
   if (poHeight.type != TiDimensionTypeUndefined) {
-    [contentViewProxy layoutProperties]->height.type = poHeight.type;
-    [contentViewProxy layoutProperties]->height.value = poHeight.value;
+    [thisProxy layoutProperties]->height.type = poHeight.type;
+    [thisProxy layoutProperties]->height.value = poHeight.value;
     poHeight = TiDimensionUndefined;
   }
 
- TiBottomSheetContentSize = SizeConstraintViewWithSizeAddingResizing([contentViewProxy layoutProperties], contentViewProxy, screenSize, NULL);
+ TiBottomSheetContentSize = SizeConstraintViewWithSizeAddingResizing([thisProxy layoutProperties], thisProxy, screenSize, NULL);
 
   return TiBottomSheetContentSize;
 #else
@@ -629,30 +716,41 @@ UIView *closeButtonView = nil;
 
 - (void)updateContentSize
 {
-//  NSLog(@"updateContentSize ");
-    CGSize newSize = [self contentSize];
+    TiThreadPerformOnMainThread(
+        ^{
+            CGSize newSize = [self contentSize:contentViewProxy];
+
+            if (defaultsToNonSystemSheet == NO){
+                 [[self viewController] setPreferredContentSize:newSize];
+            }
+            [contentViewProxy reposition];
+        },
+        NO);
+}
+
+
+
+- (CGSize)updateContentSizeWithReturn
+{
+    CGSize newSize = [self contentSize:contentViewProxy];
 
     if (defaultsToNonSystemSheet == NO){
-        [[self viewController] setPreferredContentSize:newSize];
+         [[self viewController] setPreferredContentSize:newSize];
     }
     [contentViewProxy reposition];
-
+    return newSize;
 }
 
 - (void)updatePopoverNow
 {
-  //  NSLog(@"updatePopoverNow ");
     if (![self valueForKey:@"backgroundColor"] || [[self valueForKey:@"backgroundColor"] isEqual:@"transparent"]){
            [self replaceValue:[TiUtils hexColorValue:[UIColor lightGrayColor]] forKey:@"backgroundColor" notification:YES];
     }
-
     
     if (defaultsToNonSystemSheet == NO){
 
                 UIViewController *theController = [self viewController];
-       
                 bottomSheet = [theController sheetPresentationController];
-                
                 bottomSheet.delegate = self;
        
                 if ([self valueForKey:@"largestUndimmedDetentIdentifier"]){
@@ -673,20 +771,13 @@ UIView *closeButtonView = nil;
                 if ([self valueForKey:@"preferredCornerRadius"]){
                     bottomSheet.preferredCornerRadius = [TiUtils floatValue:[self valueForKey:@"preferredCornerRadius"]];
                 }
-                
         
-        
-               
-        
-                bottomSheet.prefersScrollingExpandsWhenScrolledToEdge = [TiUtils boolValue:[self valueForKey:@"prefersScrollingExpandsWhenScrolledToEdge"] def:YES];
+                bottomSheet.prefersScrollingExpandsWhenScrolledToEdge = [TiUtils boolValue:[self valueForKey:@"prefersScrollingExpandsWhenScrolledToEdge"] def:NO];
                    
-                bottomSheet.prefersEdgeAttachedInCompactHeight = [TiUtils boolValue:[self valueForKey:@"prefersEdgeAttachedInCompactHeight"] def:YES];
+                bottomSheet.prefersEdgeAttachedInCompactHeight = [TiUtils boolValue:[self valueForKey:@"prefersEdgeAttachedInCompactHeight"] def:NO];
                 
-                bottomSheet.widthFollowsPreferredContentSizeWhenEdgeAttached = [TiUtils boolValue:[self valueForKey:@"widthFollowsPreferredContentSizeWhenEdgeAttached"] def:YES];
+                bottomSheet.widthFollowsPreferredContentSizeWhenEdgeAttached = [TiUtils boolValue:[self valueForKey:@"widthFollowsPreferredContentSizeWhenEdgeAttached"] def:NO];
             
-        
-        
-        
         
               if ([self valueForKey:@"detents"]){
                   userDetents = [self valueForKey:@"detents"];
@@ -729,19 +820,14 @@ UIView *closeButtonView = nil;
               }
           
             
-                bottomSheet.prefersGrabberVisible = [TiUtils boolValue:[self valueForKey:@"prefersGrabberVisible"] def:YES];
+            bottomSheet.prefersGrabberVisible = [TiUtils boolValue:[self valueForKey:@"prefersGrabberVisible"] def:YES];
             
+            CGRect handleViewContainerFrame = CGRectMake( 0, 0, contentViewProxy.view.frame.size.width , 20);
+            UIView *handleContainer = [[UIView alloc] initWithFrame:handleViewContainerFrame];
+            [contentViewProxy.view addSubview:handleContainer];
+            [handleContainer release];
 
-
-            if ([self valueForKey:@"backgroundColor"]){
-
-           //     [theController.view setBackgroundColor:[[TiUtils colorValue:[self valueForKey:@"backgroundColor"]] _color]];
-
-//                [theController.view setBackgroundColor:[[TiUtils colorValue:[self valueForKey:@"backgroundColor"]] _color]];
-            }
            [theController.view setBackgroundColor:[[TiUtils colorValue:[self valueForKey:@"backgroundColor"]] _color]];
-
-           // [theController.view setBackgroundColor:[UIColor redColor]];
 
             if ([self valueForKey:@"modalPresentation"]){
                 if ([[TiUtils stringValue:[self valueForKey:@"modalPresentation"]] isEqual: @"fullScreen"]){
@@ -765,8 +851,6 @@ UIView *closeButtonView = nil;
             }
                 
        
-      //  NSLog(@"before closeButtonView ");
-
         if (closeButtonView != nil){
             closeButtonProxy.view.frame = closeButtonView.bounds;
             [closeButtonView addSubview:closeButtonProxy.view];
@@ -777,24 +861,18 @@ UIView *closeButtonView = nil;
 
             [theController.view addSubview:closeButtonView];
             [theController.view bringSubviewToFront:closeButtonView];
-            
-          //  NSLog(@"added closeButtonView ");
-          //  NSLog(@"closeButtonView %@",closeButtonView);
        }
 
-            [[[[TiApp app] controller] topPresentedController] presentViewController:theController animated:animated completion:^{
-                [self fireEvent:@"opened" withObject:nil];
-
-            }];
-            
-        
+                
+        [[[[TiApp app] controller] topPresentedController] presentViewController:theController animated:animated completion:^{
+            [self fireEvent:@"opened" withObject:nil];
+        }];
     }
     
     else {
         customBottomSheet = [BottomSheetViewController new];
         [customBottomSheet setProxyOfBottomSheetController:self];
-      
-      
+        
         const CGFloat y = [[[TiApp app] controller] topPresentedController].view.frame.origin.y;
         const CGFloat height = [[[TiApp app] controller] topPresentedController].view.frame.size.height;
         const CGFloat width = [[[TiApp app] controller] topPresentedController].view.frame.size.width;
@@ -811,96 +889,106 @@ UIView *closeButtonView = nil;
         customBottomSheet.view.frame = CGRectMake( 0, y + height, width, height);
 
         containerView = [[UIView alloc] init];
-        
+                
         if ([TiUtils boolValue:[self valueForUndefinedKey:@"nonSystemSheetTopShadow"] def:NO]){
             customBottomSheet.view.layer.shadowOffset = CGSizeMake(0,-2);
             customBottomSheet.view.layer.shadowRadius = 6;
             customBottomSheet.view.layer.shadowOpacity = .6f;
             customBottomSheet.view.layer.shadowColor = [UIColor blackColor].CGColor;
-            //customBottomSheet.view.layer.masksToBounds = NO;
         }
         containerView.clipsToBounds = YES;
-
-       
-        
         [customBottomSheet.view addSubview:containerView];
         
-        const CGFloat heightOfContainer = customBottomSheet.view.frame.size.height - 100;
-        const CGFloat widthOfContainer = customBottomSheet.view.frame.size.width;
-        containerView.frame = CGRectMake( 0, 0, widthOfContainer, heightOfContainer);
-        
-     
-
         useNavController = NO;
 
         if ([[[contentViewProxy class] description] isEqualToString:@"TiUINavigationWindowProxy"]) {
           useNavController = YES;
         }
-
-        UIView *controllerView_;
         
         if (useNavController) {
-          //[(TiWindowProxy *)contentViewProxy setIsManaged:YES];
             centerProxy = [self valueForUndefinedKey:@"contentView"];
-            controllerView_ = [[centerProxy controller] view];
-            [controllerView_ setFrame:[containerView bounds]];
+            contentViewOfSheet = [[centerProxy controller] view];
         }
         else {
-            controllerView_ = [contentViewProxy view];
-            [controllerView_ setFrame:[containerView bounds]];
+            contentViewOfSheet = [contentViewProxy view];
         }
-
         
+        CGFloat heightOfContainer;
+        CGFloat widthOfContainer = customBottomSheet.view.frame.size.width;
+        if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
+            nonSystemSheetShouldScroll = NO;
+            heightOfContainer = realContentHeight + bottomSheetSafeAreaInset.bottom;
+        }
+        else {
+            heightOfContainer = customBottomSheet.view.frame.size.height;
+        }
+        containerView.frame = CGRectMake( 0, 0, widthOfContainer, heightOfContainer);
         
+        CGRect controllerViewFrame = CGRectMake( 0, 0, widthOfContainer, heightOfContainer);
         if (nonSystemSheetShouldScroll == YES){
-
-          //  NSLog(@"nonSystemSheetShouldScroll == YES ");
-            UIEdgeInsets safeAreaInset = UIEdgeInsetsZero;
-            UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
-
-            safeAreaInset = [[topContainerController hostingView] safeAreaInsets];
-
-                const CGFloat heightOfScrollContainer = containerView.frame.size.height;
-                const CGFloat widthOfScrollContainer = containerView.frame.size.width;
             
+            if (useNavController == YES){
+                scrollableContentHeight = realContentHeight;
+               // controllerViewFrame.size.height = scrollableContentHeight;
+                
+                if (self.fixedHeight == YES){
+                    controllerViewFrame.size.height = realContentHeight;
+                }
+                               
+            }
+            else {
+                if (scrollableContentHeight > 0){
+                    controllerViewFrame.size.height = scrollableContentHeight;
+                }
+                else {
+                    scrollableContentHeight = realContentHeight;
+                }
+            }
+            [contentViewOfSheet setFrame:controllerViewFrame];
+
+            const CGFloat heightOfScrollContainer = containerView.frame.size.height;
+            const CGFloat widthOfScrollContainer = containerView.frame.size.width;
             
             scrollView = [[ContentScrollView alloc] initWithFrame:CGRectMake( 0, 0, widthOfScrollContainer, heightOfScrollContainer)];
+            [customBottomSheet scrollView:scrollView];
+
             scrollView.dismissing = NO;
             scrollView.delegate = self;
-//                UITapGestureRecognizer *panScrollView =
-//                  [[UITapGestureRecognizer alloc] initWithTarget:self
-//                                                          action:@selector(handleGesture:)];
-//                [scrollView addGestureRecognizer:panScrollView];
             scrollView.delaysContentTouches = NO;
-               scrollView.scrollEnabled = YES;
-              // scrollView.pagingEnabled = YES;
-               scrollView.showsVerticalScrollIndicator = YES;
-               scrollView.showsHorizontalScrollIndicator = NO;
+            scrollView.scrollEnabled = YES;
+            // scrollView.pagingEnabled = YES;
+            scrollView.alwaysBounceVertical = NO;
+            scrollView.showsVerticalScrollIndicator = YES;
+            scrollView.showsHorizontalScrollIndicator = NO;
             scrollView.canCancelContentTouches = YES;
-               scrollView.contentSize = CGSizeMake(controllerView_.frame.size.width, controllerView_.frame.size.height);
-           // NSLog(@"contentSize height %f ",[contentViewProxy view].frame.size.height);
-            scrollView.insetsLayoutMarginsFromSafeArea = YES;
+            scrollView.contentInset = UIEdgeInsetsMake(0, 0, bottomSheetSafeAreaInset.bottom, 0);
+            [scrollView setScrollIndicatorInsets:UIEdgeInsetsMake(20, 0, bottomSheetSafeAreaInset.bottom, 0)];
+            //scrollView.insetsLayoutMarginsFromSafeArea = YES;
             [containerView addSubview:scrollView];
-            [scrollView addSubview:controllerView_];
+            [scrollView addSubview:contentViewOfSheet];
+            scrollView.contentSize = CGSizeMake(contentViewOfSheet.frame.size.width, scrollableContentHeight);
             CGPoint contentOffet = scrollView.contentOffset;
             contentOffet.y = 0;
             scrollView.contentOffset = contentOffet;
-            //[customBottomSheet panRecognizerEnabled:NO];
             [customBottomSheet panRecognizerEnabled:YES];
-            [customBottomSheet scrollView:scrollView];
-            [customBottomSheet lastContentOffsetY:0];
-            
-            
-            [self disableScrolling:controllerView_];
-
         }
         else {
-           // NSLog(@"nonSystemSheetShouldScroll == NO ");
-
-            [containerView addSubview:controllerView_];
+            if (self.fixedHeight == NO){
+                controllerViewFrame.size.height = controllerViewFrame.size.height - bottomSheetSafeAreaInset.bottom;
+            }
+            else {
+                if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
+                    controllerViewFrame.size.height = realContentHeight + bottomSheetSafeAreaInset.bottom;
+                }
+                else  {
+                    controllerViewFrame.size.height = realContentHeight;
+                }
+            }
+            
+            [contentViewOfSheet setFrame:controllerViewFrame];
+            [containerView addSubview:contentViewOfSheet];
+            [self scrollingInsets:contentViewOfSheet];
         }
-        
-       
         
         if ([self valueForKey:@"preferredCornerRadius"]){
             containerView.layer.cornerRadius = [TiUtils floatValue:[self valueForKey:@"preferredCornerRadius"]];
@@ -910,63 +998,38 @@ UIView *closeButtonView = nil;
         }
         
         containerView.backgroundColor =  [[TiUtils colorValue:[self valueForKey:@"backgroundColor"]] _color];
-
+        
+        CGRect handleViewContainerFrame = CGRectMake( 0, 0, containerView.frame.size.width , 20);
+        UIView *handleContainer = [[UIView alloc] initWithFrame:handleViewContainerFrame];
+        if (nonSystemSheetShouldScroll == YES){
+            [containerView insertSubview:handleContainer aboveSubview:scrollView];
+        }
+        else {
+            [containerView insertSubview:handleContainer aboveSubview:contentViewOfSheet];
+        }
+        [handleContainer release];
+       
         if ([TiUtils boolValue:[self valueForKey:@"prefersGrabberVisible"] def:YES]){
             CGRect handleViewFrame = CGRectMake( 0, 0, 36, 5);
             UIView *handle = [[UIView alloc] initWithFrame:handleViewFrame];
             handle.backgroundColor = [self adaptiveGrabberColor];
             handle.layer.cornerRadius = 4;
-            CGSize size = containerView.frame.size;
-            [handle setCenter:CGPointMake(size.width/2, 10)];
-
-            if (nonSystemSheetShouldScroll == YES){
-                [containerView insertSubview:handle aboveSubview:scrollView];
-            }
-            else {
-                [containerView insertSubview:handle aboveSubview:controllerView_];
-            }
-
+            [handle setCenter:CGPointMake(containerView.frame.size.width/2, 10)];
+            [handleContainer addSubview:handle];
             [handle release];
         }
 
         
         if (closeButtonView != nil){
-            
             closeButtonProxy.view.frame = closeButtonView.bounds;
             [closeButtonView addSubview:closeButtonProxy.view];
             [closeButtonProxy reposition];
-
-
-            CGSize size = containerView.frame.size;
-
-            [closeButtonView setCenter:CGPointMake((size.width - (closeButtonView.bounds.size.width/2)), 24)];
-
-            if (nonSystemSheetShouldScroll == YES){
-                [containerView insertSubview:closeButtonView aboveSubview:scrollView];
-            }
-            else {
-                [containerView insertSubview:closeButtonView aboveSubview:controllerView_];
-            }
+            [closeButtonView setCenter:CGPointMake((containerView.frame.size.width - (closeButtonView.bounds.size.width/2)), 24)];
+            [containerView insertSubview:closeButtonView aboveSubview:handleContainer];
        }
         
-     
-       
-       // [[[[TiApp app] controller] topPresentedController] presentViewController:theController animated:animated completion:^{
-//        }];
-        
-        
-
         [[[[TiApp app] controller] topPresentedController].view addSubview:backgroundView];
-
         [[[[TiApp app] controller] topPresentedController].view insertSubview:customBottomSheet.view aboveSubview:backgroundView];
-
-        
-        
-       // [[[[TiApp app] controller] topPresentedController].view addSubview:theController.view];
-       // [[TiApp app] showModalController:theController animated:animated];
-
-        [self fireEvent:@"opened" withObject:nil];
-
     }
     
 }
@@ -982,51 +1045,50 @@ UIView *closeButtonView = nil;
   return [UIColor colorWithRed:0.77 green:0.77 blue:0.78 alpha:1.0];
 }
 
-- (void)disableScrolling:(UIView *)view
+- (void)scrollingInsets:(UIView *)view
 {
-    
-    if ([view respondsToSelector:@selector(setScrollEnabled:)]){
-       // NSLog(@"UIView %@ ",view);
+    if ([view respondsToSelector:@selector(setScrollEnabled:)] && self.insetsDone == NO){
 
-        if ([view performSelector: @selector (isScrollEnabled)]){
+            CGFloat bottomInset = 0;
+            if (self.fixedHeight == NO){
+                bottomInset = bottomSheetSafeAreaInset.bottom;
+            }
             
             if ([view isKindOfClass:[UITableView class]]){
-                [(UITableView *)view setScrollEnabled:NO];
-               // NSLog(@"TableView %@ ",view);
+                
+                if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
+                    bottomInset = bottomSheetSafeAreaInset.bottom;
 
+                  //  CGRect newFrame = [(UITableView *)view frame];
+                  //  newFrame.size.height = newFrame.size.height + bottomSheetSafeAreaInset.bottom;
+                  //  [(UITableView *)view setFrame:newFrame];
+                }
+                
+                [(UITableView *)view setScrollIndicatorInsets:UIEdgeInsetsMake(20, 0, bottomInset, 0)];
+                [(UITableView *)view setContentInset:UIEdgeInsetsMake(0, 0, bottomInset, 0)];
+                self.insetsDone = YES;
             }
             else if ([view isKindOfClass:[UIScrollView class]]){
-                [(UIScrollView *)view setScrollEnabled:NO];
-              //  NSLog(@"ScrollView %@ ",view);
+                if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
+                    bottomInset = bottomSheetSafeAreaInset.bottom;
+
+                   // CGRect newFrame = [(UIScrollView *)view frame];
+                  //  newFrame.size.height = newFrame.size.height + bottomSheetSafeAreaInset.bottom;
+                   // [(UIScrollView *)view setFrame:newFrame];
+                }
+
+                [(UIScrollView *)view setScrollIndicatorInsets:UIEdgeInsetsMake(20, 0, bottomInset, 0)];
+                [(UIScrollView *)view setContentInset:UIEdgeInsetsMake(0, 0, bottomInset, 0)];
+                self.insetsDone = YES;
             }
             else {
               //  NSLog(@"UIView isScrollEnabled %d ",[view performSelector: @selector (isScrollEnabled)]);
             }
-        }
     }
-    
-    for (UIView *eachView in view.subviews) {
-
-        if ([eachView respondsToSelector:@selector(setScrollEnabled:)]){
-          //  NSLog(@"UIView %@ ",eachView);
-
-            if ([eachView performSelector: @selector (isScrollEnabled)]){
-                
-                if ([eachView isKindOfClass:[UITableView class]]){
-                    [(UITableView *)eachView setScrollEnabled:NO];
-                    //NSLog(@"TableView %@ ",eachView);
-
-                }
-                else if ([eachView isKindOfClass:[UIScrollView class]]){
-                    [(UIScrollView *)eachView setScrollEnabled:NO];
-                    //NSLog(@"ScrollView %@ ",eachView);
-                }
-                else {
-                  //  NSLog(@"UIView isScrollEnabled %d ",[eachView performSelector: @selector (isScrollEnabled)]);
-                }
+    else {
+            for (UIView *eachView in view.subviews) {
+                [self scrollingInsets:eachView];
             }
-        }
-        [self disableScrolling:eachView];
     }
 }
 
@@ -1039,13 +1101,11 @@ UIView *closeButtonView = nil;
         isDismissing = YES;
         [self hide:nil];
     }
-  //Do stuff here...
 }
 
 - (void)handleGesture:(UITapGestureRecognizer *)recognizer
 {
     if (scrollView.dismissing == NO){
-       // NSLog(@"*************** handleGesture");
         [customBottomSheet panFromScrollView:YES];
     }
 }
@@ -1055,30 +1115,18 @@ UIView *closeButtonView = nil;
 {
   TiThreadPerformOnMainThread(
       ^{
-        UIViewController *viewController = [self viewController];
-          
-//          CGRect newControllerFrame = viewController.view.frame;
-//
-//          newControllerFrame.size.height = viewController.view.frame.size.height + 24;
-//          viewController.view.frame = newControllerFrame;
+          UIEdgeInsets edgeInsets = [insetsValue UIEdgeInsetsValue];
 
-          self->contentViewProxy.view.frame = viewController.view.frame;
-
-//          CGRect controllerFrame = viewController.view.frame;
-//          controllerFrame.origin.y = 24;
-//         // controllerFrame.size.height = controllerFrame.size.height - 24;
-//          self->contentViewProxy.view.frame = controllerFrame;
-
-//
-        UIEdgeInsets edgeInsets = [insetsValue UIEdgeInsetsValue];
-//
-        viewController.view.frame = CGRectMake(viewController.view.frame.origin.x + edgeInsets.left, viewController.view.frame.origin.y + (edgeInsets.top), viewController.view.frame.size.width - edgeInsets.left - edgeInsets.right, viewController.view.frame.size.height - (edgeInsets.top) - edgeInsets.bottom);
-          
-
-//
-//
-//          self->contentViewProxy.view.frame = CGRectMake(self->contentViewProxy.view.frame.origin.x + edgeInsets.left, self->contentViewProxy.view.frame.origin.y + (edgeInsets.top), self->contentViewProxy.view.frame.size.width - edgeInsets.left - edgeInsets.right, self->contentViewProxy.view.frame.size.height - (edgeInsets.top) - edgeInsets.bottom);
-          
+          if (defaultsToNonSystemSheet == YES){
+              if (useNavController == YES && nonSystemSheetShouldScroll == NO){
+                  [[self->contentViewProxy controller] view].frame = CGRectMake([[self->contentViewProxy controller] view].frame.origin.x + edgeInsets.left, [[self->contentViewProxy controller] view].frame.origin.y + (edgeInsets.top), [[self->contentViewProxy controller] view].frame.size.width - edgeInsets.left - edgeInsets.right, [[self->contentViewProxy controller] view].frame.size.height - (edgeInsets.top) - edgeInsets.bottom);
+              }
+              else {
+                  if (nonSystemSheetShouldScroll == NO) {
+                      self->contentViewProxy.view.frame = CGRectMake(self->contentViewProxy.view.frame.origin.x + edgeInsets.left, self->contentViewProxy.view.frame.origin.y + (edgeInsets.top), self->contentViewProxy.view.frame.size.width - edgeInsets.left - edgeInsets.right, self->contentViewProxy.view.frame.size.height - (edgeInsets.top) - edgeInsets.bottom);
+                  }
+              }
+          }
       },
       NO);
 }
@@ -1087,93 +1135,59 @@ UIView *closeButtonView = nil;
 
 
 -(void)scrollViewDidScroll:(ContentScrollView *)scrollView{
-    
-   // NSLog(@"++++++++++ scrollViewDidScroll ");
-
-    [customBottomSheet lastContentOffsetY:scrollView.contentOffset.y];
-    
+        
     if (scrollView.contentOffset.y <= 0) {
         //scrollView.contentOffset = CGPointZero;
-
         if (scrollView.dismissing == NO){
             scrollView.dismissing = YES;
-            [customBottomSheet panRecognizerInit:YES];
-            [customBottomSheet panRecognizerEnabled:YES];
-           // scrollView.panGestureRecognizer.enabled = NO;
-           // scrollView.panGestureRecognizer.enabled = NO;
-          //  NSLog(@"++++++++++ scrollViewDidScroll disable ScrollView ");
-            
         }
     }
     else {
         scrollView.dismissing = NO;
-        [customBottomSheet panRecognizerEnabled:NO];
-      //  scrollView.panGestureRecognizer.enabled = YES;
-      //  NSLog(@"++++++++++ scrollViewDidScroll enable ScrollView ");
-       // [customBottomSheet panFromScrollView:NO];
-
-//        if (scrollView.panGestureRecognizer.enabled == NO){
-//            scrollView.panGestureRecognizer.enabled = YES;
-//        }
     }
-     
 }
 //
 - (void)scrollViewDidEndDecelerating:(ContentScrollView *)scrollView_ // scrolling has ended
 {
-    [customBottomSheet panRecognizerEnabled:YES];
-   // NSLog(@"scrollViewDidEndDecelerating ");
-   // scrollView.panGestureRecognizer.enabled = YES;
     scrollView.dismissing = NO;
-    [customBottomSheet panFromScrollView:NO];
-//    scrollView.panGestureRecognizer.enabled = YES;
-  //  [customBottomSheet panRecognizerEnabled:YES];
-
 }
 //
 - (void)scrollViewDidEndDragging:(ContentScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
-  //  NSLog(@"scrollViewDidEndDragging ");
     scrollView.dismissing = NO;
-   // scrollView.panGestureRecognizer.enabled = YES;
-    [customBottomSheet panRecognizerEnabled:YES];
-    [customBottomSheet panFromScrollView:NO];
-
-  //  [customBottomSheet panFromScrollView:NO];
-
 }
-//
+
 //-(void)scrollViewWillBeginDragging:(ContentScrollView *)scrollView{
 //   // [customBottomSheet panRecognizerEnabled:NO];
 //    NSLog(@"scrollViewWillBeginDragging ");
 //    if ([customBottomSheet panRecognizerState] == YES) {
 //        NSLog(@"scrollViewWillBeginDragging pan disabled");
-//        [customBottomSheet panRecognizerEnabled:NO];
+//        [customBottomSheet  :NO];
 //    }
 //}
 
-
 - (void)proxyDidRelayout:(id)sender
 {
-  if (sender == contentViewProxy) {
-    if (viewController != nil) {
-      CGSize newSize = [self contentSize];
-      if (TiBottomSheetContentSize.width != newSize.width || TiBottomSheetContentSize.height != newSize.height){
-        if (!CGSizeEqualToSize([viewController preferredContentSize], newSize)) {
-          //  NSLog(@"proxyDidRelayout ");
-          [self updateContentSize];
-        }
-      }
-    }
-  }
+    TiThreadPerformOnMainThread(
+        ^{
+            if (sender == contentViewProxy) {
+              if (viewController != nil) {
+                  CGSize newSize = [self contentSize:sender];
+                if (TiBottomSheetContentSize.width != newSize.width || TiBottomSheetContentSize.height != newSize.height){
+                  if (!CGSizeEqualToSize([viewController preferredContentSize], newSize)) {
+                    [self updateContentSize];
+                  }
+                }
+             }
+            }
+        },
+      NO);
+
 }
 
 
 - (void)sheetPresentationControllerDidChangeSelectedDetentIdentifier :(UISheetPresentationController *)bottomSheetPresentationController
 {
-    
-   // NSLog(@"\n\n sheetPresentationControllerDidChangeSelectedDetentIdentifier ");
-
     if (bottomSheetPresentationController.selectedDetentIdentifier == UISheetPresentationControllerDetentIdentifierMedium){
         NSDictionary *detentObject = [NSDictionary dictionaryWithObjectsAndKeys:@"medium", @"selectedDetentIdentifier", nil];
         [self fireEvent:@"detentChange" withObject:detentObject];
@@ -1185,13 +1199,8 @@ UIView *closeButtonView = nil;
 }
 
 
-
 - (BOOL)presentationControllerShouldDismiss:(UISheetPresentationController *)bottomSheetPresentationController
 {
-    
-  //  NSLog(@"presentationControllerShouldDismiss ");
-
-    
   if ([[self viewController] presentedViewController] != nil) {
     return NO;
   }
@@ -1203,18 +1212,13 @@ UIView *closeButtonView = nil;
 
 - (void)presentationControllerDidDismiss:(UISheetPresentationController *)bottomSheetPresentationController
 {
-   // NSLog(@"presentationControllerDidDismiss ");
-  //  DebugLog(@"BottomSheet presentationControllerDidDismiss");
   [bottomSheetModule cleanup];
 
     if (eventFired == NO){
         eventFired = YES;
         [self fireEvent:@"closed" withObject:nil];
     }
-
   currentTiBottomSheet = nil;
-
- // [self cleanup];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context
@@ -1239,115 +1243,10 @@ UIView *closeButtonView = nil;
 {
   deviceRotated = YES;
 }
-
-
-
 @end
 
+
 @implementation ContentScrollView
-//
-//- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
-//{
-//    UIView *hitView = [super hitTest:point withEvent:event];
-//
-//    if (hitView == self) {
-//        return nil;
-//    }
-//    return hitView;
-//}
-
-//- (BOOL)gestureRecognizer:(UIPanGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIPanGestureRecognizer *)otherGestureRecognizer
-//{
-//    NSLog(@"gestureRecognizer: %f ",self.contentOffset.y);
-//
-////
-////    if (self.scrollEnabled == YES){
-////
-////        if (self.contentOffset.y < 0) {
-////
-////            self.scrollEnabled = NO;
-////
-////            //self.contentOffset = CGPointZero;
-////    //        if (self.scrollEnabled == YES){
-////    //            self.scrollEnabled = NO;
-////    //        }
-////            NSLog(@"gestureRecognizer should pan");
-////            return NO;
-////
-////
-////           // scrollView.userInteractionEnabled = NO;
-////           // scrollView.panGestureRecognizer.enabled = NO;
-////        }
-////        else {
-////    //        if (self.scrollEnabled == NO){
-////                self.scrollEnabled = YES;
-////    //        }
-////            NSLog(@"gestureRecognizer should NOT pan");
-////            return NO;
-////
-////
-////        }
-////
-////    }
-//    if (self.contentOffset.y == 0) {
-//        return YES;
-//    }
-//    else {
-//        return NO;
-//    }
-//
-//}
-//- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
-//{
-//    if (_panRecognizer == gestureRecognizer) {
-//        if ([otherGestureRecognizer.view isKindOfClass:UIScrollView.class]) {
-//            UIScrollView *scrollView = (UIScrollView *)otherGestureRecognizer.view;
-//            if (scrollView.contentOffset.x == 0) {
-//                return YES;
-//            }
-//        }
-//    }
-//
-//    return NO;
-//}
-
-//- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
-//{
-//    //NSLog(@"gestureRecognizer ");
-//    if (self.contentOffset.y <= 0 && self.panGestureRecognizer.enabled == YES) {
-//        self.panGestureRecognizer.enabled = NO;
-//       // NSLog(@"gestureRecognizer disabled");
-//    }
-//  //  [customBottomSheet panFromScrollView:YES];
-//
-////    if (self.contentOffset.y <= 0) {
-////
-////        NSLog(@"panRecognizer offset.y <= 0");
-////        return YES;
-////
-////    }
-////    else {
-////        NSLog(@"panRecognizer offset.y > 0");
-////
-////        return NO;
-////    }
-//    return YES;
-//
-////    NSLog(@"gestureRecognizer %@",gestureRecognizer.state);
-//   // NSLog(@"otherGestureRecognizer %@",otherGestureRecognizer.state);
-//
-//    
-////    if (self.dismissing == YES){
-////        NSLog(@"gestureRecognizer YES");
-////        return YES;
-////    }
-////    else {
-////        NSLog(@"gestureRecognizer NO");
-////
-////        return NO;
-////    }
-////    return YES;
-//}
 
 @end
 

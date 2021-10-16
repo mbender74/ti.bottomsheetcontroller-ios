@@ -22,6 +22,9 @@
 
 TiBottomsheetcontrollerProxy *myParentProxy;
 UIScrollView *customSheetScrollView;
+UIView *customView;
+CGRect windowRect;
+
 UIPanGestureRecognizer *thisGesture;
 UIEdgeInsets safeAreaInset;
 
@@ -40,48 +43,100 @@ UIEdgeInsets safeAreaInset;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view.
+    
+    fullViewYPosition = 100;
+    partialViewYPosition = [UIScreen mainScreen].bounds.size.height - 130;
+    expandedViewYPosition = ceilf([UIScreen mainScreen].bounds.size.height / 2);
+    
+    self.fullViewYPosition = fullViewYPosition;
+    self.partialViewYPosition = partialViewYPosition;
+    self.expandedViewYPosition = expandedViewYPosition;
+    
     [self setupData];
     [self setupGestureEvent];
-
 }
 
 - (void)viewDidAppear:(BOOL)animated {
+    
     [super viewDidAppear:animated];
 
     __weak __typeof(self)weakSelf = self;
     
-    dispatch_async(dispatch_get_main_queue(), ^{
-
-        [UIView animateWithDuration:0.25
-              delay:0.0
-              options:UIViewAnimationOptionCurveEaseOut
-              animations:^{
-                [myParentProxy backgroundView].backgroundColor = viewBackgroundColor;
-                //weakSelf.parentViewController.view.backgroundColor = viewBackgroundColor;
-                [weakSelf moveView:weakSelf.lastStatus];
-            } completion:^(BOOL finished) {
-        }];
-    });
     
+    customView = [myParentProxy contentViewOfSheet];
+    windowRect = customView.frame;
+    director = up;
+    
+    [UIView animateWithDuration:0.35 delay:0 usingSpringWithDamping:1 initialSpringVelocity:1 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        [myParentProxy backgroundView].backgroundColor = viewBackgroundColor;
+        [weakSelf moveView:weakSelf.lastStatus];
+    } completion:^(BOOL finished) {
+        
+        CGFloat startY = fullViewYPosition;
+
+        if (self.lastStatus == partial) {
+            startY = partialViewYPosition;
+        } else if (self.lastStatus == expanded) {
+            startY = expandedViewYPosition;
+        }
+        customView = [myParentProxy contentViewOfSheet];
+        windowRect = customView.frame;
+
+        if (customSheetScrollView){
+                customViewRect = customSheetScrollView.frame;
+                customViewRect.size.height = self.view.frame.size.height - startY;
+                customSheetScrollView.frame = customViewRect;
+                customView.frame = windowRect;
+
+            if (myParentProxy.fixedHeight == NO){
+                [myParentProxy.viewProxy reposition];
+                [myParentProxy.viewProxy layoutChildrenIfNeeded];
+            }
+        }
+        else {
+            if (myParentProxy.fixedHeight == NO){
+                customViewRect = customView.frame;
+                customViewRect.size.height = self.view.frame.size.height - startY;
+                customView.frame = customViewRect;
+
+                [myParentProxy.viewProxy reposition];
+                [myParentProxy.viewProxy layoutChildrenIfNeeded];
+            }
+        }
+
+    }];
+    [myParentProxy fireEvent:@"opened" withObject:nil];
 }
 
 #pragma mark -
-
-
 
 - (void)setupData {
     dismissModeOfSheet = NO;
     backgroundViewHidden = YES;
     viewBackgroundColor = [UIColor clearColor];
     dimmedViewBackgroundColor = [[TiUtils colorValue:@"#22000000"] _color];
-    fullViewYPosition = 100;
-    partialViewYPosition = [UIScreen mainScreen].bounds.size.height - 130;
-    expandedViewYPosition = ceilf([UIScreen mainScreen].bounds.size.height / 2);
+    
+    
+    if ([myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]){
+        self.partialViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]];
+    }
+    if ([myParentProxy valueForKey:@"nonSystemSheetMediumHeight"]){
+        self.expandedViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetMediumHeight"]];
+
+    }
+    if ([myParentProxy valueForKey:@"nonSystemSheetLargeHeight"]){
+        self.fullViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetLargeHeight"]];
+    }
+    
+    fullViewYPosition = self.fullViewYPosition;
+    partialViewYPosition = self.partialViewYPosition;
+    expandedViewYPosition = self.expandedViewYPosition;
+    
+    width = self.view.frame.size.width;
+    height = self.view.frame.size.height;
 
     safeAreaInset = UIEdgeInsetsZero;
     UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
-
     safeAreaInset = [[topContainerController hostingView] safeAreaInsets];
     
     
@@ -167,6 +222,23 @@ UIEdgeInsets safeAreaInset;
         }
     }
     
+    
+    if ([myParentProxy nonSystemSheetAutomaticStartPositionFromContentViewHeight] == YES){
+        CGFloat realHeight;
+        realHeight = [myParentProxy realContentHeight] + safeAreaInset.bottom;
+       
+        fullViewYPosition = [UIScreen mainScreen].bounds.size.height - realHeight;
+                
+        maxPosition = fullViewYPosition;
+        minPosition = fullViewYPosition;
+        maxState = full;
+        minState = full;
+        mediumPosition = NO;
+        smallPosition = NO;
+        fullPositon = YES;
+        startDetent = @"large";
+    }
+
     if ([myParentProxy valueForKey:@"largestUndimmedDetentIdentifier"]){
         largestUndimmedDetent = [TiUtils stringValue:[myParentProxy valueForKey:@"largestUndimmedDetentIdentifier"]];
     }
@@ -175,9 +247,6 @@ UIEdgeInsets safeAreaInset;
     }
     
    
-
-    
-    
     if ([startDetent isEqual: @"small"]){
         if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
             self.lastStatus = partial;
@@ -236,31 +305,79 @@ UIEdgeInsets safeAreaInset;
         }
     }
     [myParentProxy backgroundView].hidden = backgroundViewHidden;
-
-    
-    if (customSheetScrollView){
-        CGFloat height = self.view.frame.size.height;
-        CGFloat bottomIntent = safeAreaInset.bottom;
-        CGFloat topInset = customSheetScrollView.contentInset.top;
-
-        if (self.lastStatus == partial) {
-            bottomIntent = (((height) - 136) - bottomIntent);
-        }
-        else if (self.lastStatus == expanded) {
-            bottomIntent = (((height)/2) - bottomIntent) - 6;
-        }
-        else {
-            bottomIntent = bottomIntent + 24;
-        }
-        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent, 0);
-        [customSheetScrollView setContentInset:insets];
-        [customSheetScrollView setScrollIndicatorInsets:insets];
-    }
-
-    
 }
 
 #pragma mark -
+
+- (void)changeInsets:(UIView *)view
+{
+    CGFloat bottomIntent = safeAreaInset.bottom;
+    CGFloat topInset;
+    CGFloat diffPos = (yPosition-(yPosition-maxPosition));
+    
+    
+    if (self.lastStatus == partial) {
+                bottomIntent = ((height)-130)+safeAreaInset.bottom;
+            }
+    else if (self.lastStatus == expanded) {
+                bottomIntent = ((height/2))+safeAreaInset.bottom;
+    }
+    else {
+                bottomIntent = safeAreaInset.bottom + 100;
+    }
+    
+    if ([view respondsToSelector:@selector(setScrollEnabled:)]){
+
+            if ([view isKindOfClass:[UITableView class]]){
+                UITableView *thisTableView = (UITableView *)view;
+                topInset = thisTableView.contentInset.top;
+
+                scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent - 20, 0);
+                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
+                [thisTableView setContentInset:insets];
+                [thisTableView setScrollIndicatorInsets:scrollBarinsets];
+            }
+            else if ([view isKindOfClass:[UIScrollView class]]){
+                UIScrollView *thisTableView = (UIScrollView *)view;
+                topInset = thisTableView.contentInset.top;
+                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
+                scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+                [thisTableView setContentInset:insets];
+                [thisTableView setScrollIndicatorInsets:scrollBarinsets];
+            }
+            else {
+            }
+    }
+    else {
+        for (UIView *eachView in view.subviews) {
+
+            if ([eachView respondsToSelector:@selector(setScrollEnabled:)]){
+                    
+                    if ([eachView isKindOfClass:[UITableView class]]){
+                        UITableView *thisTableView = (UITableView *)eachView;
+                        topInset = thisTableView.contentInset.top;
+                        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent, 0);
+                        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+
+                        [thisTableView setContentInset:insets];
+                        [thisTableView setScrollIndicatorInsets:scrollBarinsets];
+                    }
+                    else if ([eachView isKindOfClass:[UIScrollView class]]){
+                        UIScrollView *thisTableView = (UIScrollView *)eachView;
+                        topInset = thisTableView.contentInset.top;
+                        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
+                        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+
+                        [thisTableView setContentInset:insets];
+                        [thisTableView setScrollIndicatorInsets:scrollBarinsets];
+                    }
+                    else {
+                    }
+            }
+            [self changeInsets:eachView];
+        }
+    }
+}
 
 - (State)state {
     return self.lastStatus;
@@ -282,7 +399,6 @@ UIEdgeInsets safeAreaInset;
     return thisGesture;
 }
 
-
 - (void)setupGestureEvent {
     UIPanGestureRecognizer *gesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGesture:)];
     [self.view addGestureRecognizer:gesture];
@@ -291,52 +407,25 @@ UIEdgeInsets safeAreaInset;
 }
 
 - (void)moveView:(State)state {
-    CGFloat yPosition = fullViewYPosition;
-    const CGFloat width = self.view.frame.size.width;
-    const CGFloat height = self.view.frame.size.height;
-    CGFloat bottomIntent = safeAreaInset.bottom;
+    yPosition = fullViewYPosition;
 
     if (dismissModeOfSheet == NO){
         if (state == partial) {
             yPosition = partialViewYPosition;
-            bottomIntent = (((height) - 136) - bottomIntent);
-            
         } else if (state == expanded) {
             yPosition = expandedViewYPosition;
-            bottomIntent = (((height)/2) - bottomIntent) - 6;
         }
         else {
-           // bottomIntent = 130;
-          //  bottomIntent = bottomIntent - 100;
-           // bottomIntent = bottomIntent + 24;
-            bottomIntent = bottomIntent + 24;
 
         }
     }
     else {
         yPosition = [UIScreen mainScreen].bounds.size.height;
-       // bottomIntent = bottomIntent - 100;
-       // bottomIntent = bottomIntent + 24;
-        bottomIntent = bottomIntent + 24;
-
     }
 
     CGRect rect = CGRectMake(0 , yPosition, width, height);
-
-
-   // NSLog(@"before insets %f",bottomIntent);
-   // NSLog(@"customSheetScrollView %@",customSheetScrollView);
-
-    CGFloat topInset = customSheetScrollView.contentInset.top;
-
-    if (customSheetScrollView){
-     //   NSLog(@"intents %f",bottomIntent);
-
-        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent, 0);
-        [customSheetScrollView setContentInset:insets];
-        [customSheetScrollView setScrollIndicatorInsets:insets];
-    }
-    
+    customViewRect.size.height = height - yPosition;
+        
     self.view.frame = rect;
 }
 
@@ -347,24 +436,45 @@ UIEdgeInsets safeAreaInset;
         panInit = NO;
         translation.y = 0;
     }
-    
-  //  NSLog(@"sheet translation %f", translation.y);
 
-    
-//    if (translation.y > 1){
-//        translation.y = 1;
-//    }
-    
     const CGFloat minY = self.view.frame.origin.y;
     dismissModeOfSheet = NO;
-    
-    if ((minY + translation.y >= maxPosition)) {
-        const CGFloat width = self.view.frame.size.width;
-        const CGFloat height = self.view.frame.size.height;
-        const CGRect rect = CGRectMake(0 , minY + translation.y, width, height);
+    CGFloat newY = minY + translation.y;
+
+    if ((newY >= maxPosition)) {
+        width = self.view.frame.size.width;
+        height = self.view.frame.size.height;
+        const CGRect rect = CGRectMake(0 , newY, width, height);
         self.view.frame = rect;
+               
+        if (recognizer.state != UIGestureRecognizerStateEnded) {
+            customViewRect.size.height = height - newY;
+
+            if (customSheetScrollView){
+                    customSheetScrollView.frame = customViewRect;
+                    customView.frame = windowRect;
+
+                if (myParentProxy.fixedHeight == NO){
+                    [myParentProxy.viewProxy reposition];
+
+                    [myParentProxy.viewProxy layoutChildren:YES];
+                    [myParentProxy.viewProxy willChangeSize];
+                }
+            }
+            else {
+                if (myParentProxy.fixedHeight == NO){
+                    customView.frame = customViewRect;
+
+                    [myParentProxy.viewProxy reposition];
+
+                    [myParentProxy.viewProxy layoutChildren:YES];
+                    [myParentProxy.viewProxy willChangeSize];
+                }
+            }
+
+        }
         [recognizer setTranslation:CGPointZero inView:self.view];
-        if (minY + translation.y > minPosition) {
+        if (newY > minPosition) {
             dismissModeOfSheet = YES;
         }
         else {
@@ -373,10 +483,12 @@ UIEdgeInsets safeAreaInset;
     }
 }
 
+
+
+
 - (void)roundViews {
     self.view.clipsToBounds = NO;
 }
-
 
 - (void)scrollView:(UIScrollView*)scrollview {
     customSheetScrollView = scrollview;
@@ -389,83 +501,6 @@ UIEdgeInsets safeAreaInset;
     
     CGPoint translation = [recognizer translationInView:self.view];
 
-//    NSLog(@"panEnabled %d",panEnabled);
-//
-//    NSLog(@"translation %f",translation.y);
-//    NSLog(@"lastTranslation %f",lastTranslation);
-//
-//    NSLog(@"newSrollViewOffsetY %f",newSrollViewOffsetY);
-//    NSLog(@"lastScrollViewOffsetY %f",lastScrollViewOffsetY);
-//    NSLog(@"customSheetScrollView.isDragging %d",customSheetScrollView.isDragging);
-//
-//    
-//    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-//
-//    });
-    
-    
-    if (customSheetScrollView != nil){
-
-        
-        if (panFromScrollView == YES){
-           // NSLog(@"----------------  panFromScrollView");
-
-            if (panEnabled == YES && customSheetScrollView.isDragging == NO){
-              //  NSLog(@"----------------  panFromScrollView SKIP");
-
-                return;
-            }
-
-        }
-        else {
-          //  NSLog(@"--------------  NO panFromScrollView");
-
-        }
-        
-        if (lastScrollViewOffsetY != newSrollViewOffsetY && customSheetScrollView.isDragging != NO){
-          //  NSLog(@"lastScrollViewOffsetY != newSrollViewOffsetY &&  dragging != NO");
-            lastScrollViewOffsetY = newSrollViewOffsetY;
-            lastTranslation = translation.y;
-        }
-        else {
-
-            if ((panEnabled == YES && lastTranslation == newSrollViewOffsetY) || (panEnabled == YES && translation.y == 0)){
-                
-                if ((panEnabled == YES && lastScrollViewOffsetY == newSrollViewOffsetY)){
-                    lastTranslation = translation.y;
-                    lastScrollViewOffsetY = newSrollViewOffsetY;
-               //     NSLog(@"++++++++++++++  NO SKIP");
-
-                }
-                else  {
-                    if (customSheetScrollView.isDragging == NO){
-                       // NSLog(@"SKIP");
-                        lastTranslation = translation.y;
-                        lastScrollViewOffsetY = newSrollViewOffsetY;
-                        return;
-                    }
-                  //  NSLog(@"++++++++++++++  NO SKIP AFTER");
-
-                    lastTranslation = translation.y;
-                    lastScrollViewOffsetY = newSrollViewOffsetY;
-                }
-            }
-            
-            lastTranslation = translation.y;
-            lastScrollViewOffsetY = newSrollViewOffsetY;
-        }
-        if (panEnabled == NO){
-            lastTranslation = translation.y;
-
-            lastScrollViewOffsetY = newSrollViewOffsetY;
-            return;
-        }
-        lastTranslation = translation.y;
-
-        lastScrollViewOffsetY = newSrollViewOffsetY;
-    }
-    
-    
     [self moveViewWithGesture:recognizer];
 
     if (recognizer.state != UIGestureRecognizerStateEnded) {
@@ -474,19 +509,17 @@ UIEdgeInsets safeAreaInset;
 
     __weak __typeof(self)weakSelf = self;
 
-    
     if (dismissModeOfSheet == YES){
         [myParentProxy sendEvent:@"dismiss"];
         return;
     }
     else {
-       // dispatch_async(dispatch_get_main_queue(), ^{
 
-        [UIView animateKeyframesWithDuration:0.25
+        [UIView animateKeyframesWithDuration:0.3
                                        delay:0.0
-                                     options:UIViewKeyframeAnimationOptionAllowUserInteraction
+                                     options:UIViewKeyframeAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut
                                   animations:^{
-            const Director director = [recognizer velocityInView:weakSelf.view].y >= 0 ? down: up;
+            director = [recognizer velocityInView:weakSelf.view].y >= 0 ? down: up;
             State state = weakSelf.lastStatus;
 
             if (weakSelf.lastStatus == partial && director == up) {
@@ -567,7 +600,33 @@ UIEdgeInsets safeAreaInset;
             }
 
             weakSelf.lastStatus = state;
+            
+            
             [weakSelf moveView:state];
+            if (director == up){
+                if (customSheetScrollView){
+                        customSheetScrollView.frame = customViewRect;
+                        customView.frame = windowRect;
+
+                    if (myParentProxy.fixedHeight == NO){
+                        [myParentProxy.viewProxy reposition];
+
+                        [myParentProxy.viewProxy layoutChildren:YES];
+                        [myParentProxy.viewProxy willChangeSize];
+                    }
+                }
+                else {
+
+                    if (myParentProxy.fixedHeight == NO){
+                        customView.frame = customViewRect;
+
+                        [myParentProxy.viewProxy reposition];
+
+                        [myParentProxy.viewProxy layoutChildren:YES];
+                        [myParentProxy.viewProxy willChangeSize];
+                    }
+                }
+            }
 
                    
                     if (self.lastStatus == expanded){
@@ -632,22 +691,19 @@ UIEdgeInsets safeAreaInset;
                                     [myParentProxy backgroundView].hidden = backgroundViewHidden;
                                 }
 
-                                [UIView animateWithDuration:0.25
-                                      delay:0.0
-                                      options:UIViewAnimationOptionCurveEaseOut
-                                      animations:^{
-                                        [myParentProxy backgroundView].backgroundColor = viewBackgroundColor;
+                                
+                                [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+                                    [myParentProxy backgroundView].backgroundColor = viewBackgroundColor;
                                     } completion:^(BOOL finished) {
                                         if (backgroundViewHidden == YES){
                                             [myParentProxy backgroundView].hidden = backgroundViewHidden;
                                         }
-                                        if (customSheetScrollView != nil){
-                                            customSheetScrollView.panGestureRecognizer.enabled = YES;
-                                        }
-                                }];
+                                       
+
+                                    }];
+                               
                             });
                             
-                           
                     }
 
                     id detentID = detentString;
@@ -657,13 +713,35 @@ UIEdgeInsets safeAreaInset;
 
             
                 } completion:^(BOOL finished) {
-                   
-                    
-                }];
-       // });
-    }
-    
+                    if (director == down){
+                        if (customSheetScrollView){
+                                customSheetScrollView.frame = customViewRect;
+                                customView.frame = windowRect;
 
+                            if (myParentProxy.fixedHeight == NO){
+                                [myParentProxy.viewProxy reposition];
+
+                                [myParentProxy.viewProxy willChangeSize];
+                                [myParentProxy.viewProxy layoutChildren:YES];
+
+                            }
+                        }
+                        else {
+
+                            if (myParentProxy.fixedHeight == NO){
+                                customView.frame = customViewRect;
+
+                                [myParentProxy.viewProxy reposition];
+
+                                [myParentProxy.viewProxy willChangeSize];
+                                [myParentProxy.viewProxy layoutChildren:YES];
+                            }
+                        }
+
+
+                    }
+                }];
+    }
 }
 
 @end
