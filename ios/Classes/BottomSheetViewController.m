@@ -225,8 +225,9 @@ UIEdgeInsets safeAreaInset;
     
     if ([myParentProxy nonSystemSheetAutomaticStartPositionFromContentViewHeight] == YES){
         CGFloat realHeight;
-        realHeight = [myParentProxy realContentHeight] + safeAreaInset.bottom;
-       
+        //realHeight = [myParentProxy realContentHeight] + safeAreaInset.bottom;
+        realHeight = [myParentProxy realContentHeight];
+
         fullViewYPosition = [UIScreen mainScreen].bounds.size.height - realHeight;
                 
         maxPosition = fullViewYPosition;
