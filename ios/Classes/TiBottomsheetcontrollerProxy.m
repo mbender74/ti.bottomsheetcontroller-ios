@@ -7,7 +7,6 @@
  * WARNING: This is generated code. Modify at your own risk and without support.
  *
  *
- * CODE taken form Titaniim SDK
  */
 
 #import "TiBottomsheetcontrollerProxy.h"
@@ -510,9 +509,19 @@ UIView *closeButtonView = nil;
             TiWindowProxy *childWindowProxy = [contentViewProxy valueForKey:@"window"];
             
             id childWindowProxyHeight = [childWindowProxy valueForUndefinedKey:@"height"];
-            if (childWindowProxyHeight && (![childWindowProxyHeight isEqual:@"SIZE"] && ![childWindowProxyHeight isEqual:@"FILL"])) {
-                self.fixedHeight = YES;
+            if (childWindowProxyHeight) {
+                if ([childWindowProxyHeight isEqual:@"SIZE"]){
+                    
+                }
+                else if ([childWindowProxyHeight isEqual:@"FILL"]){
+                    
+                }
+                else {
+                    self.fixedHeight = YES;
+                }
             }
+
+            
             
             realContentHeight = [(TiWindowProxy *)childWindowProxy view].frame.size.height;
             if (realContentHeight >= [UIScreen mainScreen].bounds.size.height){
@@ -521,9 +530,18 @@ UIView *closeButtonView = nil;
         }
         else {
             id contentViewProxyHeight = [contentViewProxy valueForUndefinedKey:@"height"];
-            if (contentViewProxyHeight && (![contentViewProxyHeight isEqual:@"SIZE"] && ![contentViewProxyHeight isEqual:@"FILL"])) {
-                self.fixedHeight = YES;
+            if (contentViewProxyHeight) {
+                if ([contentViewProxyHeight isEqual:@"SIZE"]){
+                    
+                }
+                else if ([contentViewProxyHeight isEqual:@"FILL"]){
+                    
+                }
+                else {
+                    self.fixedHeight = YES;
+                }
             }
+
 
             realContentHeight = [(TiWindowProxy *)contentViewProxy view].frame.size.height;
             if (realContentHeight >= [UIScreen mainScreen].bounds.size.height){
@@ -535,6 +553,7 @@ UIView *closeButtonView = nil;
         [contentViewProxy windowDidOpen];
     });
   } else {
+      self.fixedHeight = NO;
 
 
       CGSize reCalculatedSize;
@@ -543,8 +562,16 @@ UIView *closeButtonView = nil;
       [contentViewProxy reposition];
       
       id contentViewProxyHeight = [contentViewProxy valueForUndefinedKey:@"height"];
-      if (contentViewProxyHeight && (![contentViewProxyHeight isEqual:@"SIZE"] && ![contentViewProxyHeight isEqual:@"FILL"])) {
-          self.fixedHeight = YES;
+      if (contentViewProxyHeight) {
+          if ([contentViewProxyHeight isEqual:@"SIZE"]){
+              
+          }
+          else if ([contentViewProxyHeight isEqual:@"FILL"]){
+              
+          }
+          else {
+              self.fixedHeight = YES;
+          }
       }
 
       
@@ -553,8 +580,7 @@ UIView *closeButtonView = nil;
 
             
             UITableView *sv = nil;
-
-            
+           
             if ([contentViewProxy.view isKindOfClass:[TiUITableView class]]){
 
                 object_setClass(sv, [UITableView class]);
@@ -917,7 +943,8 @@ UIView *closeButtonView = nil;
         CGFloat widthOfContainer = customBottomSheet.view.frame.size.width;
         if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
             nonSystemSheetShouldScroll = NO;
-            heightOfContainer = realContentHeight + bottomSheetSafeAreaInset.bottom;
+            //heightOfContainer = realContentHeight + bottomSheetSafeAreaInset.bottom;
+            heightOfContainer = realContentHeight;
         }
         else {
             heightOfContainer = customBottomSheet.view.frame.size.height;
@@ -974,11 +1001,20 @@ UIView *closeButtonView = nil;
         }
         else {
             if (self.fixedHeight == NO){
-                controllerViewFrame.size.height = controllerViewFrame.size.height - bottomSheetSafeAreaInset.bottom;
+                if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
+                  //  controllerViewFrame.size.height = controllerViewFrame.size.height + bottomSheetSafeAreaInset.bottom;
+                }
+                else {
+                  //  controllerViewFrame.size.height = controllerViewFrame.size.height - bottomSheetSafeAreaInset.bottom;
+                }
+                controllerViewFrame.size.height = realContentHeight;
+
             }
             else {
                 if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
-                    controllerViewFrame.size.height = realContentHeight + bottomSheetSafeAreaInset.bottom;
+                    controllerViewFrame.size.height = realContentHeight;
+                   // controllerViewFrame.size.height = realContentHeight + bottomSheetSafeAreaInset.bottom;
+
                 }
                 else  {
                     controllerViewFrame.size.height = realContentHeight;
@@ -1065,6 +1101,8 @@ UIView *closeButtonView = nil;
                 }
                 
                 [(UITableView *)view setScrollIndicatorInsets:UIEdgeInsetsMake(20, 0, bottomInset, 0)];
+                [(UITableView *)view setAlwaysBounceVertical:NO];
+
                 [(UITableView *)view setContentInset:UIEdgeInsetsMake(0, 0, bottomInset, 0)];
                 self.insetsDone = YES;
             }
@@ -1076,6 +1114,7 @@ UIView *closeButtonView = nil;
                   //  newFrame.size.height = newFrame.size.height + bottomSheetSafeAreaInset.bottom;
                    // [(UIScrollView *)view setFrame:newFrame];
                 }
+                [(UIScrollView *)view setAlwaysBounceVertical:NO];
 
                 [(UIScrollView *)view setScrollIndicatorInsets:UIEdgeInsetsMake(20, 0, bottomInset, 0)];
                 [(UIScrollView *)view setContentInset:UIEdgeInsetsMake(0, 0, bottomInset, 0)];
