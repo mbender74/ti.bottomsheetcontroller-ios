@@ -14,48 +14,70 @@
 #import <TitaniumKit/TiUtils.h>
 #import <TitaniumKit/TiWindowProxy.h>
 #import <libkern/OSAtomic.h>
-#import "BottomSheetViewController.h"
 #import "TiBottomsheetcontrollerModule.h"
 #import <objc/runtime.h>
 
-TiBottomsheetcontrollerProxy *currentTiBottomSheet;
-BottomSheetViewController *customBottomSheet;
-UIView *closeButtonView = nil;
 
 @implementation TiBottomsheetcontrollerProxy
 
 #pragma mark Setup
 
+
+//- (id)_initWithPageContext:(id<TiEvaluator>)context args:(id)args
+//{
+//    if (self = [super _initWithPageContext:context]) {
+//        bottomSheetclosingCondition = [[NSCondition alloc] init];
+//        poWidth = TiDimensionUndefined;
+//        poHeight = TiDimensionUndefined;
+//        poBWidth = TiDimensionUndefined;
+//        poBHeight = TiDimensionUndefined;
+//        nonSystemSheetShouldScroll = NO;
+//        defaultsToNonSystemSheet = YES;
+//        nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
+//        useNavController = NO;
+//        bottomSheetInitialized = NO;
+//        contentViewScrollingDisabled = NO;
+//        UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
+//        bottomSheetSafeAreaInset = [[topContainerController hostingView] safeAreaInsets];
+//    }
+//    
+//    return self;
+//}
+
+
+
 - (id)init
 {
     if (self = [super init]) {
-      bottomSheetclosingCondition = [[NSCondition alloc] init];
-      poWidth = TiDimensionUndefined;
-      poHeight = TiDimensionUndefined;
-      poBWidth = TiDimensionUndefined;
-      poBHeight = TiDimensionUndefined;
-      nonSystemSheetShouldScroll = NO;
-      defaultsToNonSystemSheet = YES;
-      nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
-      useNavController = NO;
-      contentViewScrollingDisabled = NO;
-      currentTiBottomSheet = self;
-      UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
-      bottomSheetSafeAreaInset = [[topContainerController hostingView] safeAreaInsets];
+       // bottomSheetclosingCondition = [[NSCondition alloc] init];
+        poWidth = TiDimensionUndefined;
+        poHeight = TiDimensionUndefined;
+        poBWidth = TiDimensionUndefined;
+        poBHeight = TiDimensionUndefined;
+        customBottomSheet = nil;
+        currentTiBottomSheet = nil;
+        nonSystemSheetShouldScroll = NO;
+        defaultsToNonSystemSheet = YES;
+        nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
+        useNavController = NO;
+        bottomSheetInitialized = NO;
+        contentViewScrollingDisabled = NO;
+        UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
+        bottomSheetSafeAreaInset = [[topContainerController hostingView] safeAreaInsets];
     }
-        
+
     return self;
 }
 
 - (void)dealloc
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    //[[NSNotificationCenter defaultCenter] removeObserver:self];
     [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
     RELEASE_TO_NIL(viewController);
     bottomSheetInitialized = NO;
     currentTiBottomSheet = nil;
     nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
-    RELEASE_TO_NIL(bottomSheetclosingCondition);
+   // RELEASE_TO_NIL(bottomSheetclosingCondition);
     RELEASE_TO_NIL(contentViewProxy);
     #if !TARGET_OS_MACCATALYST
     bottomSheet.delegate = nil;
@@ -74,7 +96,6 @@ UIView *closeButtonView = nil;
 {
     return @"Ti.UI.BottomSheetController";
 }
-
 
 - (NSString *)selectedDetentIdentifier
 {
@@ -243,12 +264,9 @@ UIView *closeButtonView = nil;
 {
   ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
     
-  if(currentTiBottomSheet == nil){
-    NSLog(@"[ERROR] BottomSheet is not created with createBottomSheet or a previous BottomSheetController was destroyed by 'close()' method - you need to do 'createBottomSheet' before open!!! - Ignoring call") return;
-  }
-    
   if (bottomSheetInitialized == NO) {
       eventFired = NO;
+      bottomSheetInitialized = YES;
 
       if (contentViewProxy == nil) {
           NSLog(@"[ERROR] BottomSheet no contentView set - Ignoring call") return;
@@ -263,7 +281,6 @@ UIView *closeButtonView = nil;
           ^{
             [self initAndShowSheetController];
             isDismissing = NO;
-            bottomSheetInitialized = YES;
           },
         YES);
   }
@@ -291,16 +308,18 @@ UIView *closeButtonView = nil;
                       if (eventFired == NO){
                           eventFired = YES;
                                                     
-                          [self fireEvent:@"close" withObject:nil];
-                                                    
-                          bottomSheetInitialized = NO;
+                        [self fireEvent:@"close" withObject:nil];
+                        
+                        [self cleanup];
 
-                          bottomSheet = nil;
-                          viewController = nil;
-                          contentViewProxy = nil;
-                          centerProxy = nil;
-                          closeButtonView = nil;
-                          currentTiBottomSheet = nil;
+//                          bottomSheetInitialized = NO;
+//
+//                          bottomSheet = nil;
+//                          viewController = nil;
+//                          contentViewProxy = nil;
+//                          centerProxy = nil;
+//                          closeButtonView = nil;
+//                          currentTiBottomSheet = nil;
                       }
                 }];
           }
@@ -333,24 +352,23 @@ UIView *closeButtonView = nil;
                                         [centerProxy windowWillClose];
                                         [centerProxy close:nil];
                                         [centerProxy windowDidClose];
-                                        centerProxy = nil;
                                     }
-                                    [backgroundView removeFromSuperview];
+                                    if (backgroundView != nil){
+                                        [backgroundView removeFromSuperview];
+                                    }
+                                
+                                
                                     [customBottomSheet.view removeFromSuperview];
-                                [[NSNotificationCenter defaultCenter] removeObserver:self];
-                                currentTiBottomSheet = nil;
-                                
-                                
-                                [self forgetSelf];
-                                [self release];
+                                    [self cleanup];
+
                                   //  [viewController.view removeFromSuperview];
-                                    myScrollView = nil;
-                                    bottomSheetInitialized = NO;
-                                    contentViewProxy = nil;
-                                    customBottomSheet = nil;
-                                    backgroundView = nil;
-                                    viewController = nil;
-                                    closeButtonView = nil;
+//                                    myScrollView = nil;
+//                                    bottomSheetInitialized = NO;
+//                                    contentViewProxy = nil;
+//                                    customBottomSheet = nil;
+//                                    backgroundView = nil;
+//                                    viewController = nil;
+//                                    closeButtonView = nil;
                             }
                   }];
               }
@@ -424,10 +442,8 @@ UIView *closeButtonView = nil;
 
 - (void)cleanup
 {
-  currentTiBottomSheet = nil;
   [contentViewProxy setProxyObserver:nil];
   [contentViewProxy windowWillClose];
-  bottomSheetInitialized = NO;
   [contentViewProxy windowDidClose];
   if ([contentViewProxy isKindOfClass:[TiWindowProxy class]]) {
     UIView *topWindowView = [[[TiApp app] controller] topWindowProxyView];
@@ -438,29 +454,46 @@ UIView *closeButtonView = nil;
       }
     }
   }
-  [self forgetSelf];
   [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
-  RELEASE_TO_NIL(viewController);
-  [self performSelector:@selector(release) withObject:nil afterDelay:0.5];
-  [bottomSheetclosingCondition lock];
-  isDismissing = NO;
+  //[[NSNotificationCenter defaultCenter] removeObserver:self];
+ // [self performSelector:@selector(release) withObject:nil afterDelay:0.5];
+ // [bottomSheetclosingCondition lock];
   nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
-  [bottomSheetclosingCondition signal];
-  [bottomSheetclosingCondition unlock];
+ // [bottomSheetclosingCondition signal];
+ // [bottomSheetclosingCondition unlock];
+  isDismissing = NO;
   bottomSheetInitialized = NO;
-  currentTiBottomSheet = nil;
   eventFired = NO;
-    myScrollView = nil;
-    bottomSheetInitialized = NO;
-    contentViewProxy = nil;
-    customBottomSheet = nil;
-    backgroundView = nil;
-    viewController = nil;
-    closeButtonView = nil;
+  bottomSheet.delegate = nil;
+
+  myScrollView = nil;
+  backgroundView = nil;
+  customBottomSheet = nil;
+  viewController = nil;
+  closeButtonView = nil;
+  closeButtonProxy = nil;
+  currentTiBottomSheet = nil;
+ // bottomSheetclosingCondition = nil;
+  contentViewProxy = nil;
+  centerProxy = nil;
+  if (@available(iOS 15, *)) {
+    [_detents release];
+    [_largestUndimmedDetentIdentifier release];
+  }
+  RELEASE_TO_NIL(myScrollView);
+  RELEASE_TO_NIL(backgroundView);
+  RELEASE_TO_NIL(customBottomSheet);
+  RELEASE_TO_NIL(viewController);
+  RELEASE_TO_NIL(closeButtonView);
+  RELEASE_TO_NIL(closeButtonProxy);
   RELEASE_TO_NIL(currentTiBottomSheet);
-  RELEASE_TO_NIL(bottomSheetclosingCondition);
+  //RELEASE_TO_NIL(bottomSheetclosingCondition);
   RELEASE_TO_NIL(contentViewProxy);
   RELEASE_TO_NIL(centerProxy);
+  [self forgetSelf];
+  [self _destroy];
+  [self autorelease];
+  //[self release];
 }
 
 - (void)initAndShowSheetController
@@ -734,7 +767,8 @@ UIView *closeButtonView = nil;
     if (![self valueForKey:@"backgroundColor"] || [[self valueForKey:@"backgroundColor"] isEqual:@"transparent"]){
            [self replaceValue:[TiUtils hexColorValue:[UIColor lightGrayColor]] forKey:@"backgroundColor" notification:YES];
     }
-    
+    currentTiBottomSheet = self;
+
     if (defaultsToNonSystemSheet == NO){
 
                 UIViewController *theController = [self viewController];
@@ -870,10 +904,12 @@ UIView *closeButtonView = nil;
             backgroundView = [[UIView alloc] init];
             backgroundView.frame = CGRectMake( 0, 0, width, height);
             
-            UITapGestureRecognizer *singleFingerTap =
-              [[UITapGestureRecognizer alloc] initWithTarget:self
-                                                      action:@selector(handleSingleTap:)];
-            [backgroundView addGestureRecognizer:singleFingerTap];
+            if ([TiUtils boolValue:[self valueForUndefinedKey:@"nonSystemSheetDisableDimmedBackgroundTouchDismiss"] def:NO] == NO){
+                UITapGestureRecognizer *singleFingerTap =
+                  [[UITapGestureRecognizer alloc] initWithTarget:self
+                                                          action:@selector(handleSingleTap:)];
+                [backgroundView addGestureRecognizer:singleFingerTap];
+            }
         }
 
         customBottomSheet.view.frame = CGRectMake( 0, y + height, width, height);
@@ -1131,14 +1167,6 @@ UIView *closeButtonView = nil;
 }
 
 
-
-
-
-
-
-
-
-
 - (void)handleSingleHandleTap:(UITapGestureRecognizer *)recognizer
 {
     NSDictionary *userDetents = [self valueForKey:@"detents"];
@@ -1334,19 +1362,16 @@ UIView *closeButtonView = nil;
     return NO;
   }
   [self fireEvent:@"dismissing" withObject:nil];
-
-  [contentViewProxy windowWillClose];
   return YES;
 }
 
 - (void)presentationControllerDidDismiss:(UISheetPresentationController *)bottomSheetPresentationController
 {
-
     if (eventFired == NO){
         eventFired = YES;
         [self fireEvent:@"close" withObject:nil];
     }
-  currentTiBottomSheet = nil;
+    [self cleanup];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context

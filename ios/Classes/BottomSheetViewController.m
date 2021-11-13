@@ -7,32 +7,36 @@
 //
 
 #import "BottomSheetViewController.h"
+#import "TiBottomsheetcontrollerProxy.h"
 
 
-@interface BottomSheetViewController ()
-
+@interface BottomSheetViewController (){
+    TiBottomsheetcontrollerProxy *myParentProxy;
+}
 
 @end
 
 @implementation BottomSheetViewController
 
 
+
 #pragma mark Public APIs
 
-TiBottomsheetcontrollerProxy *myParentProxy;
-UIScrollView *customSheetScrollView;
-UIView *customView;
-CGRect windowRect;
-
-UIPanGestureRecognizer *thisGesture;
-UIEdgeInsets safeAreaInset;
 
 -(id)proxyOfBottomSheetController
 {
-    return myParentProxy;
+    if (myParentProxy != nil){
+        return myParentProxy;
+    }
+    else {
+        return nil;
+    }
 }
 -(void)setProxyOfBottomSheetController:(id)args
 {
+    if (myParentProxy != nil){
+        myParentProxy = nil;
+    }
     myParentProxy = args;
 }
 
@@ -43,13 +47,40 @@ UIEdgeInsets safeAreaInset;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    fullViewYPosition = 100;
-    partialViewYPosition = [UIScreen mainScreen].bounds.size.height - 130;
-    expandedViewYPosition = ceilf([UIScreen mainScreen].bounds.size.height / 2);
     
-    self.fullViewYPosition = fullViewYPosition;
-    self.partialViewYPosition = partialViewYPosition;
-    self.expandedViewYPosition = expandedViewYPosition;
+    maxState = full;
+    maxPosition = 0;
+    minState = partial;
+    minPosition = 0;
+    panEnabled = YES;
+    panInit = NO;
+    panFromScrollView = NO;
+    width = 0;
+    height = 0;
+    customViewRect;
+    fullPositon = YES;
+    mediumPosition = YES;
+    smallPosition = YES;
+    lastScrollViewOffsetY = 0;
+    newSrollViewOffsetY = 0;
+    lastTranslation = 0;
+    yPosition = 0;
+    dismissModeOfSheet = NO;
+    doNotTranslate = NO;
+    backgroundViewHidden = NO;
+    viewBackgroundColor = nil;
+    dimmedViewBackgroundColor = nil;
+    largestUndimmedDetent = nil;
+    startDetent = nil;
+    detentString = nil;
+    director = up;
+    _fullViewYPosition = 100;
+    _partialViewYPosition = [UIScreen mainScreen].bounds.size.height - 130;
+    _expandedViewYPosition = ceilf([UIScreen mainScreen].bounds.size.height / 2);
+    
+    self.fullViewYPosition = _fullViewYPosition;
+    self.partialViewYPosition = _partialViewYPosition;
+    self.expandedViewYPosition = _expandedViewYPosition;
     
     [self setupData];
     [self setupGestureEvent];
@@ -73,12 +104,12 @@ UIEdgeInsets safeAreaInset;
         [weakSelf moveView:weakSelf.lastStatus fromEvent:NO];
     } completion:^(BOOL finished) {
         
-        CGFloat startY = fullViewYPosition;
+        CGFloat startY = _fullViewYPosition;
 
         if (self.lastStatus == partial) {
-            startY = partialViewYPosition;
+            startY = _partialViewYPosition;
         } else if (self.lastStatus == expanded) {
-            startY = expandedViewYPosition;
+            startY = _expandedViewYPosition;
         }
         customView = [myParentProxy contentViewOfSheet];
         windowRect = customView.frame;
@@ -129,9 +160,9 @@ UIEdgeInsets safeAreaInset;
         self.fullViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetLargeHeight"]];
     }
     
-    fullViewYPosition = self.fullViewYPosition;
-    partialViewYPosition = self.partialViewYPosition;
-    expandedViewYPosition = self.expandedViewYPosition;
+    _fullViewYPosition = self.fullViewYPosition;
+    _partialViewYPosition = self.partialViewYPosition;
+    _expandedViewYPosition = self.expandedViewYPosition;
     
     width = self.view.frame.size.width;
     height = self.view.frame.size.height;
@@ -141,10 +172,10 @@ UIEdgeInsets safeAreaInset;
     safeAreaInset = [[topContainerController hostingView] safeAreaInsets];
     
     
-    maxPosition = fullViewYPosition;
+    maxPosition = _fullViewYPosition;
     maxState = full;
 
-    minPosition = partialViewYPosition;
+    minPosition = _partialViewYPosition;
     minState = partial;
 
     if ([myParentProxy valueForKey:@"startDetent"]){
@@ -158,19 +189,19 @@ UIEdgeInsets safeAreaInset;
         userDetents = [myParentProxy valueForKey:@"detents"];
         
         if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
-            maxPosition = fullViewYPosition;
+            maxPosition = _fullViewYPosition;
             maxState = full;
             if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && ![TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
                 mediumPosition = NO;
                 smallPosition = NO;
 
-                minPosition = fullViewYPosition;
+                minPosition = _fullViewYPosition;
                 minState = full;
                 startDetent = @"large";
             }
             else {
                 if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && [TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    minPosition = expandedViewYPosition;
+                    minPosition = _expandedViewYPosition;
                     minState = expanded;
                     smallPosition = NO;
 
@@ -188,12 +219,12 @@ UIEdgeInsets safeAreaInset;
             }
         }
         else if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-            maxPosition = expandedViewYPosition;
+            maxPosition = _expandedViewYPosition;
             maxState = expanded;
             fullPositon = NO;
 
             if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
-                minPosition = expandedViewYPosition;
+                minPosition = _expandedViewYPosition;
                 minState = expanded;
                 smallPosition = NO;
 
@@ -208,7 +239,7 @@ UIEdgeInsets safeAreaInset;
             }
         }
         else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
-            maxPosition = partialViewYPosition;
+            maxPosition = _partialViewYPosition;
             maxState = partial;
             mediumPosition = NO;
             fullPositon = NO;
@@ -218,7 +249,7 @@ UIEdgeInsets safeAreaInset;
             }
         }
         else {
-            maxPosition = fullViewYPosition;
+            maxPosition = _fullViewYPosition;
             maxState = full;
         }
     }
@@ -229,10 +260,10 @@ UIEdgeInsets safeAreaInset;
         //realHeight = [myParentProxy realContentHeight] + safeAreaInset.bottom;
         realHeight = [myParentProxy realContentHeight];
 
-        fullViewYPosition = [UIScreen mainScreen].bounds.size.height - realHeight;
+        _fullViewYPosition = [UIScreen mainScreen].bounds.size.height - realHeight;
                 
-        maxPosition = fullViewYPosition;
-        minPosition = fullViewYPosition;
+        maxPosition = _fullViewYPosition;
+        minPosition = _fullViewYPosition;
         maxState = full;
         minState = full;
         mediumPosition = NO;
@@ -412,16 +443,16 @@ UIEdgeInsets safeAreaInset;
 
 - (void)moveView:(State)state fromEvent:(bool)tapEvent {
      
-    yPosition = fullViewYPosition;
+    yPosition = _fullViewYPosition;
 
     if (dismissModeOfSheet == NO){
         if (state == partial) {
-            yPosition = partialViewYPosition;
+            yPosition = _partialViewYPosition;
         } else if (state == expanded) {
-            yPosition = expandedViewYPosition;
+            yPosition = _expandedViewYPosition;
         }
         else {
-            yPosition = fullViewYPosition;
+            yPosition = _fullViewYPosition;
         }
     }
     else {
@@ -477,8 +508,8 @@ UIEdgeInsets safeAreaInset;
     doNotTranslate = NO;
     
     if (doNotDismiss == YES){
-        if (newY >= maxPosition) {
-            if (newY <= minPosition){
+        if (newY > maxPosition) {
+            if (newY < minPosition){
                 width = self.view.frame.size.width;
                 height = self.view.frame.size.height;
                 const CGRect rect = CGRectMake(0 , newY, width, height);
@@ -521,7 +552,7 @@ UIEdgeInsets safeAreaInset;
     }
     
     else {
-        if ((newY >= maxPosition)) {
+        if ((newY > maxPosition)) {
             width = self.view.frame.size.width;
             height = self.view.frame.size.height;
             const CGRect rect = CGRectMake(0 , newY, width, height);
@@ -658,13 +689,13 @@ UIEdgeInsets safeAreaInset;
             if (recognizer.view) {
                 if (state == expanded) {
                     CGFloat endLocation = recognizer.view.frame.origin.y;
-                    if (endLocation > expandedViewYPosition &&
+                    if (endLocation > _expandedViewYPosition &&
                         director == down && smallPosition) {
                         state = partial;
      
-                    } else if (endLocation < expandedViewYPosition &&
+                    } else if (endLocation < _expandedViewYPosition &&
                                director == up && fullPositon) {
-                        if (maxPosition == fullViewYPosition){
+                        if (maxPosition == _fullViewYPosition){
                             state = full;
                         }
                         else {
@@ -675,7 +706,7 @@ UIEdgeInsets safeAreaInset;
                 } else if (state == partial &&
                     weakSelf.lastStatus == partial) {
                     CGFloat endLocation = recognizer.view.frame.origin.y;
-                    if (endLocation < expandedViewYPosition && mediumPosition) {
+                    if (endLocation < _expandedViewYPosition && mediumPosition) {
                         state = expanded;
                     }
                     else {

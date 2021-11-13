@@ -22,10 +22,11 @@
 #import "TiUIScrollView.h"
 #import "TiUITableView.h"
 #import <TitaniumKit/TiViewTemplate.h>
+#import "BottomSheetViewController.h"
 
 
 @interface TiBottomsheetcontrollerProxy : TiProxy <UISheetPresentationControllerDelegate, UIGestureRecognizerDelegate, UIScrollViewDelegate, TiProxyObserver> {
-@private
+//@private
   pthread_rwlock_t listenerLockSheet;
   NSMutableDictionary *listenersSheet;
   UIEdgeInsets insets;
@@ -61,6 +62,9 @@
   TiDimension poBWidth;
   TiDimension poBHeight;
   BOOL deviceRotated;
+  TiBottomsheetcontrollerProxy *currentTiBottomSheet;
+  UIView *closeButtonView;
+  BottomSheetViewController *customBottomSheet;
 }
 
 
@@ -71,7 +75,7 @@
 @property (assign, nonatomic) TiViewProxy * _Nonnull viewProxy;
 #if !TARGET_OS_MACCATALYST
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000
-@property(nonatomic, copy) NSArray<UISheetPresentationControllerDetent *> * _Nullable detents;
+@property(nonatomic, copy) NSArray<UISheetPresentationControllerDetent *> * detents;
 @property(nonatomic, copy, nullable) UISheetPresentationControllerDetentIdentifier largestUndimmedDetentIdentifier;
 #endif
 #endif

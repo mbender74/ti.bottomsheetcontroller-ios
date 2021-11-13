@@ -76,6 +76,8 @@ Also new features for the nonSystemSheet!
 
 * `nonSystemSheetDisableDimmedBackground:bool`<br/>(optional) when set true, disables the dimmed backgroundView of the sheetcontroller
 
+* `nonSystemSheetDisableDimmedBackgroundTouchDismiss:bool`<br/>(optional) when set true, disables the touch event on the dimmed backgroundView that will close the sheetController
+
 * `nonSystemSheetDisablePanGestureDismiss:bool`<br/>(optional) when set true, disables the pan gesture (drag down to close), closing is only possible via closeButton then OR via "close" method
 
 ## Example

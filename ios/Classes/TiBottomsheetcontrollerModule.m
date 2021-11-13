@@ -56,13 +56,13 @@
     // reloaded once memory is available - such as caches
     [super didReceiveMemoryWarning:notification];
 }
-
-
 #pragma mark Public API
 
 - (id)createBottomSheet:(id)args{
-        id myBottomSheet = [[TiBottomsheetcontrollerProxy alloc] _initWithPageContext:[self executionContext] args:args];
-        return myBottomSheet;
+//    return [[TiBottomsheetcontrollerProxy alloc] _initWithPageContext:[self executionContext] args:args];
+    return [[TiBottomsheetcontrollerProxy alloc] _initWithPageContext:[self executionContext] args:args];
 }
+
+
 
 @end

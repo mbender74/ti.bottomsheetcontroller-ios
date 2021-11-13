@@ -106,8 +106,8 @@
 		08FB77AEFE84172EC02AAC07 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				2CCBDD6526E3FADF0078F941 /* TiBottomsheetcontrollerProxy.h */,
 				2CCBDD6626E3FADF0078F941 /* TiBottomsheetcontrollerProxy.m */,
+				2CCBDD6526E3FADF0078F941 /* TiBottomsheetcontrollerProxy.h */,
 				2CCB47062702A0BE007988E2 /* BottomSheetViewController.h */,
 				2CCB47072702A0BE007988E2 /* BottomSheetViewController.m */,
 				24DE9E0F11C5FE74003F90F6 /* TiBottomsheetcontrollerModuleAssets.h */,
