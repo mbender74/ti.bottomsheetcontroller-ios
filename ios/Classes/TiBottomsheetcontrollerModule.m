@@ -4,17 +4,15 @@
  * Created by Your Name
  * Copyright (c) 2021 Your Company. All rights reserved.
  */
-
+#import "TiBottomsheetcontrollerProxy.h"
 #import "TiBottomsheetcontrollerModule.h"
 #import "TiBase.h"
 #import "TiHost.h"
 #import "TiUtils.h"
-#import "TiBottomsheetcontrollerProxy.h"
 
 @implementation TiBottomsheetcontrollerModule
 
 
-id myBottomSheet = nil;
 
 #pragma mark Internal
 
@@ -28,30 +26,43 @@ id myBottomSheet = nil;
   return @"ti.bottomsheetcontroller";
 }
 
-- (void)cleanup
+
+#pragma mark Lifecycle
+
+-(void)startup
 {
-  myBottomSheet = nil;
+    // this method is called when the module is first loaded
+    // you *must* call the superclass
+    [super startup];
+
+    NSLog(@"[INFO] %@ loaded",self);
 }
+
+-(void)shutdown:(id)sender
+{
+    // this method is called when the module is being unloaded
+    // typically this is during shutdown. make sure you don't do too
+    // much processing here or the app will be quit forceably
+
+    // you *must* call the superclass
+    [super shutdown:sender];
+}
+
+#pragma mark Internal Memory Management
+
+-(void)didReceiveMemoryWarning:(NSNotification*)notification
+{
+    // optionally release any resources that can be dynamically
+    // reloaded once memory is available - such as caches
+    [super didReceiveMemoryWarning:notification];
+}
+
 
 #pragma mark Public API
 
 - (id)createBottomSheet:(id)args{
-   // NSLog(@"createBottomSheet ");
-    
-    // [self performSelector:@selector(updateContentViewWithSafeAreaInsets:) withObject:insetsValue afterDelay:.05];
-
-    if (myBottomSheet == nil){
-        myBottomSheet = [[TiBottomsheetcontrollerProxy alloc] _initWithPageContext:[self executionContext] args:args];
-        [myBottomSheet bottomSheetModule:self];
+        id myBottomSheet = [[TiBottomsheetcontrollerProxy alloc] _initWithPageContext:[self executionContext] args:args];
         return myBottomSheet;
-    }
-    else {
-       // NSLog(@"is open ");
-       // [self throwException:@"BottomSheet is already presented" subreason:nil location:CODELOCATION];
-        //[myBottomSheet hide:nil];
-        return myBottomSheet;
-    }
- 
 }
 
 @end

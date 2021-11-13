@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "TiBottomsheetcontrollerProxy.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -45,6 +46,7 @@ static CGFloat fullViewYPosition = 0;
 static CGFloat partialViewYPosition = 0;
 static CGFloat expandedViewYPosition = 0;
 static bool dismissModeOfSheet = NO;
+static bool doNotTranslate = NO;
 static bool backgroundViewHidden = NO;
 static UIColor *viewBackgroundColor = nil;
 static UIColor *dimmedViewBackgroundColor = nil;
@@ -63,7 +65,7 @@ static Director director = up;
 - (void)setProxyOfBottomSheetController:(id)args;
 - (void)moveViewWithGesture:(UIPanGestureRecognizer *)recognizer;
 - (void)panGesture:(UIPanGestureRecognizer *)recognizer;
-- (void)moveView:(State)state;
+- (void)moveView:(State)state fromEvent:(bool)tapEvent;
 - (State)state;
 - (void)panRecognizerEnabled:(bool)enabled;
 - (bool)panRecognizerState;

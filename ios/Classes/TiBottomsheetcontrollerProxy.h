@@ -9,7 +9,6 @@
 #define USE_TI_UINAVIGATIONWINDOW
 #define USE_TI_UISCROLLVIEW // Enable access to the core class
 #define USE_TI_UITABLEVIEW // Enable access to the core class
-#define USE_TI_UILISTVIEW
 
 #import <TitaniumKit/TiViewController.h>
 #import <TitaniumKit/TiViewProxy.h>
@@ -20,17 +19,9 @@
 #import "TiWindowProxy+Addons.h"
 #import "TiUIScrollViewProxy.h"
 #import "TiUITableViewProxy.h"
-#import "TiUIListViewProxy.h"
 #import "TiUIScrollView.h"
 #import "TiUITableView.h"
-#import "TiUIListView.h"
 #import <TitaniumKit/TiViewTemplate.h>
-
-@interface ContentScrollView : UIScrollView
-
-@property (assign, nonatomic) bool dismissing;
-
-@end
 
 
 @interface TiBottomsheetcontrollerProxy : TiProxy <UISheetPresentationControllerDelegate, UIGestureRecognizerDelegate, UIScrollViewDelegate, TiProxyObserver> {
@@ -40,7 +31,7 @@
   UIEdgeInsets insets;
   UIView *containerView;
   UIView *contentViewOfSheet;
-  ContentScrollView *scrollView;
+  UIScrollView *myScrollView;
   BOOL nonSystemSheetShouldScroll;
   BOOL nonSystemSheetAutomaticStartPositionFromContentViewHeight;
   BOOL eventFired;
@@ -51,6 +42,7 @@
   UIViewController *viewController;
   TiUINavigationWindowProxy *centerProxy;
   UISheetPresentationController *bottomSheet;
+  UIView *handle;
   NSDictionary *userDetents;
   NSString *detentStatus;
   NSString *lastDetentStatus;
@@ -74,21 +66,24 @@
 
 @property (assign, nonatomic) BOOL fixedHeight;
 @property (assign, nonatomic) BOOL insetsDone;
+@property (assign, nonatomic) bool dismissing;
 
-@property (assign, nonatomic) TiViewProxy *viewProxy;
-
+@property (assign, nonatomic) TiViewProxy * _Nonnull viewProxy;
+#if !TARGET_OS_MACCATALYST
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000
 @property(nonatomic, copy) NSArray<UISheetPresentationControllerDetent *> * _Nullable detents;
 @property(nonatomic, copy, nullable) UISheetPresentationControllerDetentIdentifier largestUndimmedDetentIdentifier;
-- (void)sendEvent:(id)args;
-- (UIView*)backgroundView;
-- (UIView*)containerView;
+#endif
+#endif
+- (void)sendEvent:(id _Nonnull)args;
+- (UIView* _Nonnull)backgroundView;
+- (UIView* _Nonnull)containerView;
 - (CGFloat)realContentHeight;
 - (CGFloat)scrollableContentHeight;
 - (BOOL)nonSystemSheetAutomaticStartPositionFromContentViewHeight;
-- (UIScrollView*)scrollView;
-- (void)bottomSheetModule:(id)args;
+- (UIScrollView* _Nonnull)scrollView;
 - (BOOL)nonSystemSheetShouldScroll;
-- (UIView*)contentViewOfSheet;
+- (UIView* _Nonnull)contentViewOfSheet;
 @end
 
 @interface myViewController : UIViewController
