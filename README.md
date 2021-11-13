@@ -9,16 +9,16 @@ iOS 15+ and fallback version for older iOS - UISheetPresentationController
 * MODULE  -> `createBottomSheet({properties}) `<br/> the **bottomSheetObject**
 
 ## bottomSheetObject Methods
-* `show({animated:bool}) `
-* `hide({animated:bool}) `<br/> hide the controller, per exaple if to did any action in the content view
+* `open({animated:bool}) `
+* `close({animated:bool}) `<br/> close the controller, per exaple if to did any action in the content view
 * `selectedDetentIdentifier`<br/>return STRING - selectedDetentIdentifier (medium,large or none)
 * `changeCurrentDetent(STRING)`<br/>change the selectedDetentIdentifier animated ('large' or 'medium') **on 'nonSystemSheet:false' only** (iOS15+)
 
 
 ## Events
 
-* `opened `
-* `closed `
+* `open `
+* `close `
 * `dismissing `
 * `detentChange ` returns {"selectedDetentIdentifier":"medium",....}
 
@@ -57,7 +57,7 @@ iOS 15+ and fallback version for older iOS - UISheetPresentationController
 * `nonSystemSheetTopShadow:bool`<br/>topShadow visible or not visible
 
 * `nonSystemSheetShouldScroll:bool`<br/>when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet
- **ATTENTION**: when you put a tableView, scrollView or listView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
+ **ATTENTION**: when you put a tableView, scrollView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
 
 
 * `nonSystemSheetAutomaticStartPositionFromContentViewHeight:bool`<br/>when this property is "**true**" the nonSystemSheet opens in the height of the contentView, **all detents are disabled**, only the real height is active, "**startDetent**" property **will be ignored**, also the "detents" property are ignored -- if you want an undimmed background, then you need to set property "**largestUndimmedDetentIdentifier**" to "large" if NOT set defaults to false
@@ -68,6 +68,11 @@ iOS 15+ and fallback version for older iOS - UISheetPresentationController
 
 * `nonSystemSheetLargeHeight:integer`<br/>(optional) when set, the large detent is set to this height
 
+* `nonSystemSheetHandleColor:Hex or String`<br/>(optional) when set, the handle will be in that color
+
+* `nonSystemSheetDisableDimmedBackground:bool`<br/>(optional) when set true, disables the dimmed backgroundView of the sheetcontroller
+
+* `nonSystemSheetDisablePanGestureDismiss:bool`<br/>(optional) when set true, disables the pan gesture (drag down to close), closing is only possible via closeButton then OR via "close" method
 
 ## Example
 
@@ -149,17 +154,20 @@ var bottomSheetController = TiBottomSheetControllerModule.createBottomSheet({
 	nonSystemSheetTopShadow: true, // has effect only on "nonSystemSheet:true"
 	nonSystemSheetShouldScroll: true, // when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet
 	// ATTENTION: when you put a tableView, scrollView or listView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
+	nonSystemSheetHandleColor:'red',
+	nonSystemSheetDisablePanGestureDismiss:true, // disables the pan gesture (drag down to close), closing is only possible via closeButton then OR via "close" method
+	nonSystemSheetDisableDimmedBackground:true, // disables the dimmed backgroundView of the sheetcontroller
 });
 
 bottomSheetController.addEventListener('dismissing', function() {
 	console.log("bottomSheet dismissing");
 });
 
-bottomSheetController.addEventListener('closed', function() {
+bottomSheetController.addEventListener('close', function() {
 	console.log("bottomSheet closed");
 });
 
-bottomSheetController.addEventListener('opened', function() {
+bottomSheetController.addEventListener('open', function() {
 	console.log("bottomSheet opened");
 });
 bottomSheetController.addEventListener('detentChange', function(e) {
@@ -167,7 +175,7 @@ bottomSheetController.addEventListener('detentChange', function(e) {
 	console.log("returns the at any time you call the propery -> bottomSheetController.selectedDetentIdentifier: " + bottomSheetController.selectedDetentIdentifier);
 });
 
-bottomSheetController.show({
+bottomSheetController.open({
 	animated: true
 });
 
