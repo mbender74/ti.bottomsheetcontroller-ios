@@ -2,7 +2,7 @@
 iOS 15+ and fallback version for older iOS - UISheetPresentationController
 
 ## UPDATE for 1.0.5
-events has changed  and methods!
+events and methods are changed!
 Also new features for the nonSystemSheet!
 
 <img src="./demo.gif" width="293" height="634" alt="Example" />
