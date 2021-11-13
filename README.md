@@ -1,7 +1,7 @@
 # Titanium BottomSheetController iOS Module
 iOS 15+ and fallback version for older iOS - UISheetPresentationController
 
-## UPDATE for 1.0.5
+## UPDATE for 1.0.5 and 1.0.6
 events and methods are changed!
 Also new features for the nonSystemSheet!
 
