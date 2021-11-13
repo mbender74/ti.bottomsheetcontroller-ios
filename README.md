@@ -6,20 +6,13 @@ iOS 15+ and fallback version for older iOS - UISheetPresentationController
 
 ## Methods
 
-* MODULE  -> `createBottomSheet({properties}) `
-returns the **bottomSheetObject**
+* MODULE  -> `createBottomSheet({properties}) `<br/> the **bottomSheetObject**
 
 ## bottomSheetObject Methods
 * `show({animated:bool}) `
-* `hide({animated:bool}) `
-
- manually hide the controller, per exaple if to did any action in the content view
-* `selectedDetentIdentifier`
-
- return STRING - selectedDetentIdentifier (medium,large or none)
-* `changeCurrentDetent(STRING)`
-
- change the selectedDetentIdentifier animated ('large' or 'medium') **on 'nonSystemSheet:false' only** (iOS15+)
+* `hide({animated:bool}) `<br/> hide the controller, per exaple if to did any action in the content view
+* `selectedDetentIdentifier`<br/>return STRING - selectedDetentIdentifier (medium,large or none)
+* `changeCurrentDetent(STRING)`<br/>change the selectedDetentIdentifier animated ('large' or 'medium') **on 'nonSystemSheet:false' only** (iOS15+)
 
 
 ## Events
@@ -27,89 +20,53 @@ returns the **bottomSheetObject**
 * `opened `
 * `closed `
 * `dismissing `
-* `detentChange `
-
- returns {"selectedDetentIdentifier":"medium",....}
+* `detentChange ` returns {"selectedDetentIdentifier":"medium",....}
 
 
 ## Properties
 
-* `detents:{large:bool,medium:bool,small:bool}`
-
- The object of heights where a sheet can rest.
+* `detents:{large:bool,medium:bool,small:bool}`<br/>The object of heights where a sheet can rest.
  *if not set, default to 'medium' only*
 
-* `preferredCornerRadius:integer`
-
- The corner radius that the sheet attempts to present with.
+* `preferredCornerRadius:integer`<br/>The corner radius that the sheet attempts to present with.
  *if not set default to iOS default radius*
 
-*	`prefersEdgeAttachedInCompactHeight:bool`
+*	`prefersEdgeAttachedInCompactHeight:bool` <br/>A Boolean value that determines whether the sheet attaches to the bottom edge of the screen in a compact-height size class.
 
- A Boolean value that determines whether the sheet attaches to the bottom edge of the screen in a compact-height size class.
+* `prefersScrollingExpandsWhenScrolledToEdge:bool`<br/>A Boolean value that determines whether scrolling expands the sheet to a larger detent.
 
-* `prefersScrollingExpandsWhenScrolledToEdge:bool`
+* `widthFollowsPreferredContentSizeWhenEdgeAttached:bool`<br/>A Boolean value that determines whether the sheet's width matches its view controller's preferred content size.
 
- A Boolean value that determines whether scrolling expands the sheet to a larger detent.
+* `prefersGrabberVisible:bool`<br/>A Boolean value that determines whether the sheet shows a grabber at the top.
 
-* `widthFollowsPreferredContentSizeWhenEdgeAttached:bool`
-
- A Boolean value that determines whether the sheet's width matches its view controller's preferred content size.
-
-* `prefersGrabberVisible:bool`
-
- A Boolean value that determines whether the sheet shows a grabber at the top.
-
-* `nonModal:bool`
-
- has effect ONLY when "nonSystemSheet:false" on iOS >= 15
+* `nonModal:bool`<br/>has effect ONLY when "nonSystemSheet:false" on iOS >= 15
 
 
-* `largestUndimmedDetentIdentifier:string`
-
- medium or large - if not set, it is full dimmed depending on activated detents - The largest detent that doesn’t dim the view underneath the sheet.
+* `largestUndimmedDetentIdentifier:string`<br/>medium or large - if not set, it is full dimmed depending on activated detents - The largest detent that doesn’t dim the view underneath the sheet.
  ***If not set, defaults to full dimmed***
 
-* `contentView:TiUIView,TiUIWindow or TiUINavigationWindow`
+* `contentView:TiUIView,TiUIWindow or TiUINavigationWindow`<br/>View (any kind), Window or NavigationWindow
 
- View (any kind), Window or NavigationWindow
-
-* `closeButton:TiUIView`
-
- View or Button
+* `closeButton:TiUIView`<br/>View or Button
 
 * `backgroundColor:Hex or String`
 
-* `nonSystemSheet:bool`
-
- A Boolean value that determines whether the sheet is iOS15 or fallback version - if "false" and device is non iOS15 it also fallbacks
+* `nonSystemSheet:bool`<br/>A Boolean value that determines whether the sheet is iOS15 or fallback version - if "false" and device is non iOS15 it also fallbacks
  **if NOT SET -> defaults to "true"**
 
-* `nonSystemSheetTopShadow:bool`
+* `nonSystemSheetTopShadow:bool`<br/>topShadow visible or not visible
 
- topShadow visible or not visible
-
-* `nonSystemSheetShouldScroll:bool`
-
- when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet
+* `nonSystemSheetShouldScroll:bool`<br/>when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet
  **ATTENTION**: when you put a tableView, scrollView or listView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
 
 
-* `nonSystemSheetAutomaticStartPositionFromContentViewHeight:bool`
+* `nonSystemSheetAutomaticStartPositionFromContentViewHeight:bool`<br/>when this property is "**true**" the nonSystemSheet opens in the height of the contentView, **all detents are disabled**, only the real height is active, "**startDetent**" property **will be ignored**, also the "detents" property are ignored -- if you want an undimmed background, then you need to set property "**largestUndimmedDetentIdentifier**" to "large" if NOT set defaults to false
 
- when this property is "**true**" the nonSystemSheet opens in the height of the contentView, **all detents are disabled**, only the real height is active, "**startDetent**" property **will be ignored**, also the "detents" property are ignored -- if you want an undimmed background, then you need to set property "**largestUndimmedDetentIdentifier**" to "large" if NOT set defaults to false
+* `nonSystemSheetSmallHeight:integer`<br/>(optional) when set, the small detent is set to this height
 
-* `nonSystemSheetSmallHeight:integer`
+* `nonSystemSheetMediumHeight:integer`<br/>(optional) when set, the medium detent is set to this height
 
- (optional) when set, the small detent is set to this height
-
-* `nonSystemSheetMediumHeight:integer`
-
- (optional) when set, the medium detent is set to this height
-
-* `nonSystemSheetLargeHeight:integer`
-
- (optional) when set, the large detent is set to this height
+* `nonSystemSheetLargeHeight:integer`<br/>(optional) when set, the large detent is set to this height
 
 
 ## Example
