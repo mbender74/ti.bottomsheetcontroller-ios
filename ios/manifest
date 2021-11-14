@@ -2,10 +2,10 @@
 # this is your module manifest and used by Titanium
 # during compilation, packaging, distribution, etc.
 #
-version: 1.0.6
+version: 1.0.7.
 apiversion: 2
 architectures: arm64 x86_64
-mac: false 
+mac: true 
 description: ti.bottomsheetcontroller
 author: Marc Bender
 license: free for everyone, no license (code partly taken from Titanium SDK)

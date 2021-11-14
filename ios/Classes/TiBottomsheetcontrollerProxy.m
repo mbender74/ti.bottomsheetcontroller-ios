@@ -772,17 +772,22 @@
     if (defaultsToNonSystemSheet == NO){
 
                 UIViewController *theController = [self viewController];
-                bottomSheet = [theController sheetPresentationController];
+                if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                    bottomSheet = [theController sheetPresentationController];
+                }
                 bottomSheet.delegate = self;
        
                 if ([self valueForKey:@"largestUndimmedDetentIdentifier"]){
                     if ([[TiUtils stringValue:[self valueForKey:@"largestUndimmedDetentIdentifier"]] isEqual: @"large"]){
-                        _largestUndimmedDetentIdentifier = UISheetPresentationControllerDetentIdentifierLarge;
+                        if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                            _largestUndimmedDetentIdentifier = UISheetPresentationControllerDetentIdentifierLarge;
+                        }
                         bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
                     }
                     else if ([[TiUtils stringValue:[self valueForKey:@"largestUndimmedDetentIdentifier"]] isEqual: @"medium"]){
-                        _largestUndimmedDetentIdentifier = UISheetPresentationControllerDetentIdentifierMedium;
-
+                        if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                            _largestUndimmedDetentIdentifier = UISheetPresentationControllerDetentIdentifierMedium;
+                        }
                         bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
 
                     }
@@ -808,18 +813,27 @@
 
                   if ([TiUtils boolValue:[self valueForKey:@"nonModal"] def:NO]) {
                       if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:NO]) {
-                          [detentsOfController addObject:[UISheetPresentationControllerDetent largeDetent]];
+                                                    
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              [detentsOfController addObject:[UISheetPresentationControllerDetent largeDetent]];
+                          }
                       }
                       if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:NO]) {
-                          [detentsOfController addObject:[UISheetPresentationControllerDetent mediumDetent]];
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              [detentsOfController addObject:[UISheetPresentationControllerDetent mediumDetent]];
+                          }
                       }
                   }
                   else {
                       if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:NO]) {
-                          [detentsOfController addObject:[UISheetPresentationControllerDetent mediumDetent]];
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              [detentsOfController addObject:[UISheetPresentationControllerDetent mediumDetent]];
+                          }
                       }
                       if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:NO]) {
-                          [detentsOfController addObject:[UISheetPresentationControllerDetent largeDetent]];
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              [detentsOfController addObject:[UISheetPresentationControllerDetent largeDetent]];
+                        }
                       }
                   }
                   
@@ -828,12 +842,14 @@
 
                   if ([TiUtils stringValue:[self valueForKey:@"startDetent"]]){
                       if ([[TiUtils stringValue:[self valueForKey:@"startDetent"]] isEqual: @"large"] && ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:NO])){
-                          bottomSheet.selectedDetentIdentifier = UISheetPresentationControllerDetentIdentifierLarge;
-
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              bottomSheet.selectedDetentIdentifier = UISheetPresentationControllerDetentIdentifierLarge;
+                          }
                       }
                       else if ([[TiUtils stringValue:[self valueForKey:@"startDetent"]] isEqual: @"medium"] && ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:NO])){
-                          bottomSheet.selectedDetentIdentifier = UISheetPresentationControllerDetentIdentifierMedium;
-
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              bottomSheet.selectedDetentIdentifier = UISheetPresentationControllerDetentIdentifierMedium;
+                          }
                       }
                       else {
                           
@@ -1344,7 +1360,7 @@
 
 }
 
-- (void)sheetPresentationControllerDidChangeSelectedDetentIdentifier :(UISheetPresentationController *)bottomSheetPresentationController
+- (void)sheetPresentationControllerDidChangeSelectedDetentIdentifier :(UISheetPresentationController *)bottomSheetPresentationController API_AVAILABLE(ios(15.0),macCatalyst(15.0))
 {
     if (bottomSheetPresentationController.selectedDetentIdentifier == UISheetPresentationControllerDetentIdentifierMedium){
         NSDictionary *detentObject = [NSDictionary dictionaryWithObjectsAndKeys:@"medium", @"selectedDetentIdentifier", nil];
@@ -1356,7 +1372,7 @@
     }
 }
 
-- (BOOL)presentationControllerShouldDismiss:(UISheetPresentationController *)bottomSheetPresentationController
+- (BOOL)presentationControllerShouldDismiss:(UISheetPresentationController *)bottomSheetPresentationController API_AVAILABLE(ios(15.0),macCatalyst(15.0))
 {
   if ([[self viewController] presentedViewController] != nil) {
     return NO;
@@ -1365,7 +1381,7 @@
   return YES;
 }
 
-- (void)presentationControllerDidDismiss:(UISheetPresentationController *)bottomSheetPresentationController
+- (void)presentationControllerDidDismiss:(UISheetPresentationController *)bottomSheetPresentationController API_AVAILABLE(ios(15.0),macCatalyst(15.0))
 {
     if (eventFired == NO){
         eventFired = YES;

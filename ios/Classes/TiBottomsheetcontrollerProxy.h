@@ -42,7 +42,7 @@
   CGSize TiBottomSheetContentSize;
   UIViewController *viewController;
   TiUINavigationWindowProxy *centerProxy;
-  UISheetPresentationController *bottomSheet;
+  UISheetPresentationController *bottomSheet API_AVAILABLE(ios(15.0),macCatalyst(15.0));
   UIView *handle;
   NSDictionary *userDetents;
   NSString *detentStatus;
@@ -71,14 +71,10 @@
 @property (assign, nonatomic) BOOL fixedHeight;
 @property (assign, nonatomic) BOOL insetsDone;
 @property (assign, nonatomic) bool dismissing;
-
 @property (assign, nonatomic) TiViewProxy * _Nonnull viewProxy;
-#if !TARGET_OS_MACCATALYST
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000
-@property(nonatomic, copy) NSArray<UISheetPresentationControllerDetent *> * detents;
-@property(nonatomic, copy, nullable) UISheetPresentationControllerDetentIdentifier largestUndimmedDetentIdentifier;
-#endif
-#endif
+@property(nonatomic, copy) NSArray<UISheetPresentationControllerDetent *> * detents API_AVAILABLE(ios(15.0),macCatalyst(15.0));
+@property(nonatomic, copy, nullable) UISheetPresentationControllerDetentIdentifier largestUndimmedDetentIdentifier API_AVAILABLE(ios(15.0),macCatalyst(15.0));
+
 - (void)sendEvent:(id _Nonnull)args;
 - (UIView* _Nonnull)backgroundView;
 - (UIView* _Nonnull)containerView;
