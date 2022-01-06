@@ -2,10 +2,10 @@
 # this is your module manifest and used by Titanium
 # during compilation, packaging, distribution, etc.
 #
-version: 1.0.7.
+version: 1.0.9
 apiversion: 2
-architectures: arm64 x86_64
-mac: true 
+architectures:arm64 x86_64
+mac: false 
 description: ti.bottomsheetcontroller
 author: Marc Bender
 license: free for everyone, no license (code partly taken from Titanium SDK)
@@ -16,4 +16,4 @@ name: ti.bottomsheetcontroller
 moduleid: ti.bottomsheetcontroller
 guid: 09a963f0-c30f-40eb-957a-1ca6851c53fb
 platform: iphone
-minsdk: 10.0.0 
+minsdk: 9.3.1 

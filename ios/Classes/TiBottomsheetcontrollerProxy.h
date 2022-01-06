@@ -7,8 +7,7 @@
  * WARNING: This is generated code. Modify at your own risk and without support.
  */
 #define USE_TI_UINAVIGATIONWINDOW
-#define USE_TI_UISCROLLVIEW // Enable access to the core class
-#define USE_TI_UITABLEVIEW // Enable access to the core class
+
 
 #import <TitaniumKit/TiViewController.h>
 #import <TitaniumKit/TiViewProxy.h>
@@ -17,10 +16,7 @@
 #import "TiUINavigationWindowProxy.h"
 #import "TiUINavigationWindowInternal.h"
 #import "TiWindowProxy+Addons.h"
-#import "TiUIScrollViewProxy.h"
-#import "TiUITableViewProxy.h"
-#import "TiUIScrollView.h"
-#import "TiUITableView.h"
+
 #import <TitaniumKit/TiViewTemplate.h>
 #import "BottomSheetViewController.h"
 
@@ -32,6 +28,7 @@
   UIEdgeInsets insets;
   UIView *containerView;
   UIView *contentViewOfSheet;
+  UIViewController *childController;
   UIScrollView *myScrollView;
   BOOL nonSystemSheetShouldScroll;
   BOOL nonSystemSheetAutomaticStartPositionFromContentViewHeight;

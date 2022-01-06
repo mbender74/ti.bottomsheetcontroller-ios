@@ -5,7 +5,7 @@
 //  Created by Phineas.Huang on 2020/5/29.
 //  Copyright © 2020 Garmin. All rights reserved.
 //
-
+#define USE_TI_UINAVIGATIONWINDOW
 #import "BottomSheetViewController.h"
 #import "TiBottomsheetcontrollerProxy.h"
 

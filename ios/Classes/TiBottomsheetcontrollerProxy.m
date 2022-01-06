@@ -8,6 +8,7 @@
  *
  *
  */
+#define USE_TI_UINAVIGATIONWINDOW
 
 #import "TiBottomsheetcontrollerProxy.h"
 #import <TitaniumKit/TiApp.h>
@@ -16,7 +17,6 @@
 #import <libkern/OSAtomic.h>
 #import "TiBottomsheetcontrollerModule.h"
 #import <objc/runtime.h>
-
 
 @implementation TiBottomsheetcontrollerProxy
 
@@ -607,7 +607,7 @@
           }
       }
 
-      
+      /*
     if (nonSystemSheetShouldScroll == YES && defaultsToNonSystemSheet == YES){
         if ([contentViewProxy.view isKindOfClass:[TiUITableView class]] || [contentViewProxy.view isKindOfClass:[TiUIScrollViewImpl class]]) {
 
@@ -684,7 +684,9 @@
     else {
         scrollableContentHeight = 0;
     }
-      
+       */
+      scrollableContentHeight = 0;
+
     if (closeButtonProxy){
       [closeButtonProxy windowWillOpen];
       [closeButtonProxy reposition];
@@ -737,16 +739,16 @@
 
 - (void)updateContentSize
 {
-    TiThreadPerformOnMainThread(
-        ^{
+   // TiThreadPerformOnMainThread(
+   //     ^{
             CGSize newSize = [self contentSize:contentViewProxy];
 
             if (defaultsToNonSystemSheet == NO){
                  [[self viewController] setPreferredContentSize:newSize];
             }
             [contentViewProxy reposition];
-        },
-        NO);
+      //  },
+      //  NO);
 }
 
 
