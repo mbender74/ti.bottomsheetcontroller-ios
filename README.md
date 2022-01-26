@@ -33,6 +33,8 @@ Also new features for the nonSystemSheet!
 
 ## Properties
 
+* `width:INTEGER`<br/>the width of the sheet can now be set (DIP only and for nonSystemSheet only)
+
 * `detents:{large:bool,medium:bool,small:bool}`<br/>The object of heights where a sheet can rest.
  *if not set, default to 'medium' only*
 
