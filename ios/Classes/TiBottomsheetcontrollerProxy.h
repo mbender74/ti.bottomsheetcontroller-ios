@@ -33,6 +33,7 @@
   BOOL nonSystemSheetShouldScroll;
   BOOL nonSystemSheetAutomaticStartPositionFromContentViewHeight;
   BOOL eventFired;
+  BOOL addScrollInsetTop;
   BOOL useNavController;
   BOOL defaultsToNonSystemSheet;
   BOOL contentViewScrollingDisabled;
@@ -46,6 +47,7 @@
   NSString *lastDetentStatus;
   UIView *backgroundView;
   CGFloat realContentHeight;
+  CGFloat additionalBottomInset;
   CGFloat scrollableContentHeight;
   UIEdgeInsets bottomSheetSafeAreaInset;
   TiViewProxy *contentViewProxy;

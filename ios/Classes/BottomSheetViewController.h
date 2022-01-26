@@ -22,7 +22,7 @@ typedef enum State {
 }State;
 
 
-@interface BottomSheetViewController : UIViewController {
+@interface BottomSheetViewController : UIViewController <UIGestureRecognizerDelegate> {
 
 enum State maxState;
 CGFloat maxPosition;
@@ -57,6 +57,8 @@ UIScrollView *customSheetScrollView;
 UIView *customView;
 CGRect windowRect;
 UIPanGestureRecognizer *thisGesture;
+UITapGestureRecognizer *thisTapGesture;
+
 UIEdgeInsets safeAreaInset;
 
 }

@@ -465,7 +465,8 @@
   bottomSheetInitialized = NO;
   eventFired = NO;
   bottomSheet.delegate = nil;
-
+  addScrollInsetTop = NO;
+  additionalBottomInset = 0;
   myScrollView = nil;
   backgroundView = nil;
   customBottomSheet = nil;
@@ -770,7 +771,9 @@
            [self replaceValue:[TiUtils hexColorValue:[UIColor lightGrayColor]] forKey:@"backgroundColor" notification:YES];
     }
     currentTiBottomSheet = self;
-
+    addScrollInsetTop = YES;
+    additionalBottomInset = 0;
+    
     if (defaultsToNonSystemSheet == NO){
 
                 UIViewController *theController = [self viewController];
@@ -913,23 +916,65 @@
         customBottomSheet = [BottomSheetViewController new];
         [customBottomSheet setProxyOfBottomSheetController:self];
         
-        const CGFloat y = [[[TiApp app] controller] topPresentedController].view.frame.origin.y;
-        const CGFloat height = [[[TiApp app] controller] topPresentedController].view.frame.size.height;
-        const CGFloat width = [[[TiApp app] controller] topPresentedController].view.frame.size.width;
+        CGFloat y = [[[TiApp app] controller] topPresentedController].view.frame.origin.y;
+        CGFloat height = [[[TiApp app] controller] topPresentedController].view.frame.size.height;
+        CGFloat width = [[[TiApp app] controller] topPresentedController].view.frame.size.width;
+        CGFloat controllerWidth = [[[TiApp app] controller] topPresentedController].view.frame.size.width;
 
-        
+        CGFloat left = 0;
+        CGFloat right = 0;
+
+        id widthValue = [self valueForUndefinedKey:@"width"];
+        if (widthValue != nil){
+            TiDimension widthOfSheet = [TiUtils dimensionValue:widthValue];
+
+            if (TiDimensionIsDip(widthOfSheet)) {
+                if(widthOfSheet.value < controllerWidth){
+                    width = widthOfSheet.value;
+                }
+            }
+        }
+        id leftValue = [self valueForUndefinedKey:@"left"];
+        if (leftValue != nil){
+            TiDimension leftOfSheet = [TiUtils dimensionValue:leftValue];
+
+            if (TiDimensionIsDip(leftOfSheet)) {
+                left = leftOfSheet.value;
+            }
+        }
+        id rightValue = [self valueForUndefinedKey:@"right"];
+        if (rightValue != nil){
+            TiDimension rightOfSheet = [TiUtils dimensionValue:rightValue];
+
+            if (TiDimensionIsDip(rightOfSheet)) {
+                right = rightOfSheet.value;
+            }
+        }
+
+        CGFloat sheetOriginX = 0;
+        sheetOriginX = (controllerWidth/2) - (width/2);
+        if (left > 0){
+            sheetOriginX = left;
+        }
+        if (right > 0){
+            sheetOriginX = controllerWidth - width - right;
+        }
+
         if ([TiUtils boolValue:[self valueForUndefinedKey:@"nonSystemSheetDisableDimmedBackground"] def:NO] == NO){
             backgroundView = [[UIView alloc] init];
-            backgroundView.frame = CGRectMake( 0, 0, width, height);
+            backgroundView.frame = CGRectMake( 0, 0, controllerWidth, height);
             
             if ([TiUtils boolValue:[self valueForUndefinedKey:@"nonSystemSheetDisableDimmedBackgroundTouchDismiss"] def:NO] == NO){
                 UITapGestureRecognizer *singleFingerTap =
                   [[UITapGestureRecognizer alloc] initWithTarget:self
                                                           action:@selector(handleSingleTap:)];
                 [backgroundView addGestureRecognizer:singleFingerTap];
+                
             }
         }
 
+        
+        
         customBottomSheet.view.frame = CGRectMake( 0, y + height, width, height);
 
         containerView = [[UIView alloc] init];
@@ -967,7 +1012,7 @@
         else {
             heightOfContainer = customBottomSheet.view.frame.size.height;
         }
-        containerView.frame = CGRectMake( 0, 0, widthOfContainer, heightOfContainer);
+        containerView.frame = CGRectMake( sheetOriginX, 0, widthOfContainer, heightOfContainer);
         
         CGRect controllerViewFrame = CGRectMake( 0, 0, widthOfContainer, heightOfContainer);
         if (nonSystemSheetShouldScroll == YES){
@@ -988,6 +1033,7 @@
                 else {
                     scrollableContentHeight = realContentHeight;
                 }
+                
             }
             [contentViewOfSheet setFrame:controllerViewFrame];
 
@@ -1037,6 +1083,17 @@
                 else  {
                     controllerViewFrame.size.height = realContentHeight;
                 }
+            }
+            
+            id topValue = [contentViewProxy valueForKey:@"top"];
+
+            TiDimension top = [TiUtils dimensionValue:topValue];
+
+            if (TiDimensionIsDip(top)) {
+                controllerViewFrame.origin.y = controllerViewFrame.origin.y + top.value;
+                controllerViewFrame.size.height = controllerViewFrame.size.height + top.value;
+                addScrollInsetTop = NO;
+                additionalBottomInset = top.value;
             }
             
             [contentViewOfSheet setFrame:controllerViewFrame];
@@ -1101,6 +1158,7 @@
             [closeButtonView setCenter:CGPointMake((containerView.frame.size.width - (closeButtonView.bounds.size.width/2)), 24)];
             [containerView insertSubview:closeButtonView aboveSubview:handleContainer];
        }
+        
         if (backgroundView != nil){
             [[[[TiApp app] controller] topPresentedController].view addSubview:backgroundView];
             [[[[TiApp app] controller] topPresentedController].view insertSubview:customBottomSheet.view aboveSubview:backgroundView];
@@ -1111,6 +1169,10 @@
     }
     
 }
+
+
+
+
 
 - (UIColor *)adaptiveGrabberColor
 {
@@ -1128,37 +1190,46 @@
     if ([view respondsToSelector:@selector(setScrollEnabled:)] && self.insetsDone == NO){
 
             CGFloat bottomInset = 0;
+            CGFloat scrollInsetTop = 0;
+            if (addScrollInsetTop == YES){
+                scrollInsetTop = 20;
+            }
+        
+        
             if (self.fixedHeight == NO){
-                bottomInset = bottomSheetSafeAreaInset.bottom;
+                bottomInset = bottomSheetSafeAreaInset.bottom + additionalBottomInset;
             }
             
             if ([view isKindOfClass:[UITableView class]]){
                 
                 if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
-                    bottomInset = bottomSheetSafeAreaInset.bottom;
+                    bottomInset = bottomSheetSafeAreaInset.bottom + additionalBottomInset;
 
                   //  CGRect newFrame = [(UITableView *)view frame];
                   //  newFrame.size.height = newFrame.size.height + bottomSheetSafeAreaInset.bottom;
                   //  [(UITableView *)view setFrame:newFrame];
                 }
                 
-                [(UITableView *)view setScrollIndicatorInsets:UIEdgeInsetsMake(20, 0, bottomInset, 0)];
+                [(UITableView *)view setScrollIndicatorInsets:UIEdgeInsetsMake(scrollInsetTop, 0, bottomInset, 0)];
                 [(UITableView *)view setAlwaysBounceVertical:NO];
-
+                
+                CGFloat topInset = [(UITableView *)view contentInset].top;
+                
                 [(UITableView *)view setContentInset:UIEdgeInsetsMake(0, 0, bottomInset, 0)];
                 self.insetsDone = YES;
             }
             else if ([view isKindOfClass:[UIScrollView class]]){
                 if (nonSystemSheetAutomaticStartPositionFromContentViewHeight == YES){
-                    bottomInset = bottomSheetSafeAreaInset.bottom;
+                    bottomInset = bottomSheetSafeAreaInset.bottom + additionalBottomInset;
 
                    // CGRect newFrame = [(UIScrollView *)view frame];
                   //  newFrame.size.height = newFrame.size.height + bottomSheetSafeAreaInset.bottom;
                    // [(UIScrollView *)view setFrame:newFrame];
                 }
                 [(UIScrollView *)view setAlwaysBounceVertical:NO];
+                CGFloat topInset = [(UIScrollView *)view contentInset].top;
 
-                [(UIScrollView *)view setScrollIndicatorInsets:UIEdgeInsetsMake(20, 0, bottomInset, 0)];
+                [(UIScrollView *)view setScrollIndicatorInsets:UIEdgeInsetsMake(scrollInsetTop, 0, bottomInset, 0)];
                 [(UIScrollView *)view setContentInset:UIEdgeInsetsMake(0, 0, bottomInset, 0)];
                 self.insetsDone = YES;
             }
@@ -1178,11 +1249,14 @@
 - (void)handleSingleTap:(UITapGestureRecognizer *)recognizer
 {
   CGPoint location = [recognizer locationInView:[recognizer.view superview]];
+    
     if (isDismissing == NO){
         isDismissing = YES;
         [self close:nil];
     }
 }
+
+
 
 
 - (void)handleSingleHandleTap:(UITapGestureRecognizer *)recognizer
@@ -1414,6 +1488,22 @@
 {
   deviceRotated = YES;
 }
+
+
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
+    if (customBottomSheet != nil){
+        if ([customBottomSheet.view hitTest:[touch locationInView:contentViewProxy.view] withEvent:nil]) {
+            return NO;
+        }
+    }
+    return YES;
+}
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
+    return YES;
+}
+
+
 @end
 
 

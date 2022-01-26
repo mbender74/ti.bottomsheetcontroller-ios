@@ -81,7 +81,9 @@
     self.fullViewYPosition = _fullViewYPosition;
     self.partialViewYPosition = _partialViewYPosition;
     self.expandedViewYPosition = _expandedViewYPosition;
-    
+    customView = [myParentProxy contentViewOfSheet];
+    windowRect = customView.frame;
+
     [self setupData];
     [self setupGestureEvent];
 }
@@ -93,8 +95,6 @@
     __weak __typeof(self)weakSelf = self;
     
     
-    customView = [myParentProxy contentViewOfSheet];
-    windowRect = customView.frame;
     director = up;
     
     [UIView animateWithDuration:0.35 delay:0 usingSpringWithDamping:1 initialSpringVelocity:1 options:UIViewAnimationOptionCurveEaseOut animations:^{
@@ -437,6 +437,14 @@
 - (void)setupGestureEvent {
     UIPanGestureRecognizer *gesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGesture:)];
     [self.view addGestureRecognizer:gesture];
+    
+    UITapGestureRecognizer *singleFingerTap =
+      [[UITapGestureRecognizer alloc] initWithTarget:self
+                                              action:@selector(handleSingleTap:)];
+    [self.view addGestureRecognizer:singleFingerTap];
+    thisTapGesture = singleFingerTap;
+    singleFingerTap.delegate = self;
+
     thisGesture = gesture;
     [self roundViews];
 }
@@ -497,6 +505,9 @@
         doNotDismiss = YES;
     }
     CGPoint translation = [recognizer translationInView:self.view];
+    CGPoint location = [recognizer locationInView:self.view];
+    doNotTranslate = NO;
+
     if(panInit == YES){
         panInit = NO;
         translation.y = 0;
@@ -505,8 +516,11 @@
     dismissModeOfSheet = NO;
     CGFloat newY = minY + translation.y;
        
-    doNotTranslate = NO;
-    
+    if (location.x < customView.superview.frame.origin.x || location.x > (customView.superview.frame.origin.x + customView.superview.frame.size.width)){
+        doNotTranslate = YES;
+        return;
+    }
+
     if (doNotDismiss == YES){
         if (newY > maxPosition) {
             if (newY < minPosition){
@@ -613,10 +627,27 @@
     newSrollViewOffsetY = contentOffsetY;
 }
 
+- (void)handleSingleTap:(UITapGestureRecognizer *)recognizer {
+    
+    
+    CGPoint locationInSheet = [recognizer locationInView:self.view];
+
+    if ([TiUtils boolValue:[myParentProxy valueForUndefinedKey:@"nonSystemSheetDisableDimmedBackgroundTouchDismiss"] def:NO] == NO){
+        if (locationInSheet.x < customView.superview.frame.origin.x || locationInSheet.x > customView.superview.frame.origin.x+customView.superview.frame.size.width){
+            dismissModeOfSheet = YES;
+            [myParentProxy sendEvent:@"dismiss"];
+            [myParentProxy fireEvent:@"dismissing" withObject:nil];
+            return;
+        }
+        
+    }
+}
+
 - (void)panGesture:(UIPanGestureRecognizer *)recognizer {
     
+    
     CGPoint translation = [recognizer translationInView:self.view];
-
+    
     [self moveViewWithGesture:recognizer];
 
     if (recognizer.state != UIGestureRecognizerStateEnded) {
@@ -865,4 +896,23 @@
     }
 }
 
+    
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch
+{
+    CGPoint location = [touch locationInView:self.view];
+
+    if (CGRectContainsPoint(customView.superview.frame, location)) {
+        if (gestureRecognizer == thisTapGesture){
+            return NO;
+        }
+        return YES;
+    }
+   return YES;
+}
+    
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
+
+    return YES;
+}
+    
 @end
