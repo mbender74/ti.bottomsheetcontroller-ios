@@ -11,6 +11,7 @@ Also new features for the nonSystemSheet!
 
 <img src="./demo.gif" width="293" height="634" alt="Example" />
 
+<img src="./example-width-property.png" width="293" height="634" alt="Example width property" />
 
 ## Methods
 
