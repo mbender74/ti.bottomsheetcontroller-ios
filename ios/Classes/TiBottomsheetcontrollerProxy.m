@@ -157,6 +157,12 @@
             bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
         }
     }
+    else {
+        _largestUndimmedDetentIdentifier = [TiUtils stringValue:value];
+        if (bottomSheet != nil){
+            bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
+        }
+    }
 }
 
 
@@ -782,23 +788,6 @@
                 }
                 bottomSheet.delegate = self;
        
-                if ([self valueForKey:@"largestUndimmedDetentIdentifier"]){
-                    if ([[TiUtils stringValue:[self valueForKey:@"largestUndimmedDetentIdentifier"]] isEqual: @"large"]){
-                        if (@available(iOS 15.0, macCatalyst 15.0, *)) {
-                            _largestUndimmedDetentIdentifier = UISheetPresentationControllerDetentIdentifierLarge;
-                        }
-                        bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
-                    }
-                    else if ([[TiUtils stringValue:[self valueForKey:@"largestUndimmedDetentIdentifier"]] isEqual: @"medium"]){
-                        if (@available(iOS 15.0, macCatalyst 15.0, *)) {
-                            _largestUndimmedDetentIdentifier = UISheetPresentationControllerDetentIdentifierMedium;
-                        }
-                        bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
-
-                    }
-                    else {
-                    }
-                }
                 
                 if ([self valueForKey:@"preferredCornerRadius"]){
                     bottomSheet.preferredCornerRadius = [TiUtils floatValue:[self valueForKey:@"preferredCornerRadius"]];
@@ -811,8 +800,10 @@
                 bottomSheet.widthFollowsPreferredContentSizeWhenEdgeAttached = [TiUtils boolValue:[self valueForKey:@"widthFollowsPreferredContentSizeWhenEdgeAttached"] def:NO];
             
         
-              if ([self valueForKey:@"detents"]){
+              if ([self valueForKey:@"detents"] || [self valueForKey:@"customDetents"]){
+
                   userDetents = [self valueForKey:@"detents"];
+                  customDetents = [self valueForKey:@"customDetents"];
 
                   NSMutableArray *detentsOfController = [NSMutableArray arrayWithCapacity:2];
 
@@ -842,24 +833,68 @@
                       }
                   }
                   
+                  for (NSString* key in customDetents.allKeys){
+                      CGFloat value = [TiUtils floatValue:[customDetents objectForKey:key]];
+                      
+                      //NSLog(@" customDetent %@ : %f",key,value);
+
+                      if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                          [detentsOfController addObject:[UISheetPresentationControllerDetent customDetentWithHeight:value]];
+
+                          if ( [[TiUtils stringValue:[self valueForKey:@"startDetent"]] isEqual: key] ){
+                              
+                              //NSLog(@" startDetent is customDetent %@ : %f",key,value);
+                              
+                              initalSelectedDetent = UISheetPresentationControllerDetentIdentifierCustom(value);
+                          }
+                      }
+                  }
+                  
                  
                   bottomSheet.detents = detentsOfController;
 
                   if ([TiUtils stringValue:[self valueForKey:@"startDetent"]]){
+                      
                       if ([[TiUtils stringValue:[self valueForKey:@"startDetent"]] isEqual: @"large"] && ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:NO])){
                           if (@available(iOS 15.0, macCatalyst 15.0, *)) {
-                              bottomSheet.selectedDetentIdentifier = UISheetPresentationControllerDetentIdentifierLarge;
+                              initalSelectedDetent = UISheetPresentationControllerDetentIdentifierLarge;
+                              bottomSheet.selectedDetentIdentifier = initalSelectedDetent;
                           }
                       }
                       else if ([[TiUtils stringValue:[self valueForKey:@"startDetent"]] isEqual: @"medium"] && ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:NO])){
                           if (@available(iOS 15.0, macCatalyst 15.0, *)) {
-                              bottomSheet.selectedDetentIdentifier = UISheetPresentationControllerDetentIdentifierMedium;
+                              initalSelectedDetent = UISheetPresentationControllerDetentIdentifierMedium;
+                              bottomSheet.selectedDetentIdentifier = initalSelectedDetent;
                           }
                       }
-                      else {
-                          
+                      else if (initalSelectedDetent != nil) {
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              bottomSheet.selectedDetentIdentifier = initalSelectedDetent;
+                          }
                       }
                   }
+                  if ([self valueForKey:@"largestUndimmedDetentIdentifier"]){
+                      if ([[TiUtils stringValue:[self valueForKey:@"largestUndimmedDetentIdentifier"]] isEqual: @"large"]){
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              _largestUndimmedDetentIdentifier = UISheetPresentationControllerDetentIdentifierLarge;
+                          }
+                          bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
+                      }
+                      else if ([[TiUtils stringValue:[self valueForKey:@"largestUndimmedDetentIdentifier"]] isEqual: @"medium"]){
+                          if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                              _largestUndimmedDetentIdentifier = UISheetPresentationControllerDetentIdentifierMedium;
+                          }
+                          bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
+
+                      }
+                      else {
+                          _largestUndimmedDetentIdentifier = [TiUtils stringValue:[self valueForKey:@"largestUndimmedDetentIdentifier"]];
+                              if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                                  bottomSheet.largestUndimmedDetentIdentifier = _largestUndimmedDetentIdentifier;
+                              }
+                      }
+                  }
+
               }
           
             

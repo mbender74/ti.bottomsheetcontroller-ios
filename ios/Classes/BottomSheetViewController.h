@@ -6,7 +6,12 @@
 //  Copyright © 2020 Garmin. All rights reserved.
 //
 #define USE_TI_UINAVIGATIONWINDOW
+#define USE_TI_UISCROLLVIEW // Enable access to the core class
+#define USE_TI_UITABLEVIEW // Enable access to the core class
+#define USE_TI_UILISTVIEW
+
 #import <UIKit/UIKit.h>
+#import "UISheetPresentationControllerDetent+CustomDetent.h"
 
 NS_ASSUME_NONNULL_BEGIN
 typedef enum Director {

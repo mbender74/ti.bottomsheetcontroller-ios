@@ -7,6 +7,9 @@
  * WARNING: This is generated code. Modify at your own risk and without support.
  */
 #define USE_TI_UINAVIGATIONWINDOW
+#define USE_TI_UISCROLLVIEW // Enable access to the core class
+#define USE_TI_UITABLEVIEW // Enable access to the core class
+#define USE_TI_UILISTVIEW
 
 
 #import <TitaniumKit/TiViewController.h>
@@ -43,6 +46,8 @@
   UISheetPresentationController *bottomSheet API_AVAILABLE(ios(15.0),macCatalyst(15.0));
   UIView *handle;
   NSDictionary *userDetents;
+  NSDictionary *customDetents;
+       
   NSString *detentStatus;
   NSString *lastDetentStatus;
   UIView *backgroundView;
@@ -64,6 +69,7 @@
   TiBottomsheetcontrollerProxy *currentTiBottomSheet;
   UIView *closeButtonView;
   BottomSheetViewController *customBottomSheet;
+  NSString *initalSelectedDetent;
 }
 
 
