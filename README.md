@@ -57,6 +57,8 @@ Also new features for the nonSystemSheet!
 
 * `nonModal:bool`<br/>has effect ONLY when "nonSystemSheet:false" on iOS >= 15
 
+* `startDetent:string`<br/>medium or large or the a key from customDetents - if not set, it is full dimmed depending on activated detents - The largest detent that doesn’t dim the view underneath the sheet.
+
 
 * `largestUndimmedDetentIdentifier:string`<br/>medium or large - if not set, it is full dimmed depending on activated detents - The largest detent that doesn’t dim the view underneath the sheet.
  ***If not set, defaults to full dimmed***
