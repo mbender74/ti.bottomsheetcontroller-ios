@@ -1,6 +1,8 @@
 # Titanium BottomSheetController iOS Module
 iOS 15+ and fallback version for older iOS - UISheetPresentationController
 
+## UPDATE for 1.2.0
+added customDetents (iOS16)
 
 ## UPDATE for 1.0.7
 now MacCatalyst (15+) compatible
@@ -38,6 +40,9 @@ Also new features for the nonSystemSheet!
 
 * `detents:{large:bool,medium:bool,small:bool}`<br/>The object of heights where a sheet can rest.
  *if not set, default to 'medium' only*
+
+* `customDetents:{key:value,key:value....}`<br/>The object of key/value pairs ex: 'customA':100  where a sheet can rest. Multiple pairs possible
+ 
 
 * `preferredCornerRadius:integer`<br/>The corner radius that the sheet attempts to present with.
  *if not set default to iOS default radius*
