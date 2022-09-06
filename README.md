@@ -147,29 +147,42 @@ bottomView.setData(tableRows, {
 });
 
 var bottomSheetController = TiBottomSheetControllerModule.createBottomSheet({
-	detents: {
-		large: true,
-		medium: true,
-		small: false
+	width:400,
+	detents:{
+		large:false,
+		medium:false,
+		small:false
 	}, // "small" has effect only when "nonSystemSheet:true"
-	startDetent: 'medium', // medium or large -  when "nonSystemSheet:true" also "small" is possible -- when startDetent is "small" and detents:{small:false} is defaults to "medium" and so on...
-	preferredCornerRadius: 20,
-	prefersEdgeAttachedInCompactHeight: false, // has effect only when "nonSystemSheet:false"
-	prefersScrollingExpandsWhenScrolledToEdge: false, // has effect only when "nonSystemSheet:false"
-	widthFollowsPreferredContentSizeWhenEdgeAttached: true, // has effect only when "nonSystemSheet:false"
-	prefersGrabberVisible: true, // bottomSheet grabberHandle visible true / false
-	nonModal: false, // has effect ONLY when "nonSystemSheet:false" on iOS >= 15
-	largestUndimmedDetentIdentifier: 'small', // medium or large (also "small" available when "nonSystemSheet:true") - if not set, it is full dimmed depending on activated detents when "nonSystemSheet:true" the property also allow to interact with the view in the background of the bottomSheet - when not dimmed, when dimmed interaction is not possible with the view in the background
-	contentView: bottomView,
-	closeButton: YOUR_CLOSEBUTTON_VIEW_FOR_THE_SHEET, // add a closeButtonView to the bottomSheet
-	backgroundColor: '#eeeeee',
-	nonSystemSheet: false, // defaults to "true" if not set - non iOS 15 SheetController (backwards compatible to non iOS15) when "true" - iOS15+ SheetController when "false" - if non iOS15 and set to "false" it also defaults to "true"
-	nonSystemSheetTopShadow: true, // has effect only on "nonSystemSheet:true"
-	nonSystemSheetShouldScroll: true, // when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet
-	// ATTENTION: when you put a tableView, scrollView or listView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
-	nonSystemSheetHandleColor:'red',
+	customDetents:{
+		customA:100,
+		customB:200,
+		customC:300 // more possible!
+	},
+	startDetent:'customA', // medium or large -  when "nonSystemSheet:true" also "small" is possible -- when startDetent is "small" and detents:{small:false} is defaults to "medium" and so on... when customDetents are set enter here the "key" as string
+	preferredCornerRadius:20,
+	prefersEdgeAttachedInCompactHeight:true, // has effect only when "nonSystemSheet:false" - A Boolean value that determines whether the sheet attaches to the bottom edge of the screen in a compact-height size class.
+	prefersScrollingExpandsWhenScrolledToEdge:false, // has effect only when "nonSystemSheet:false"
+	widthFollowsPreferredContentSizeWhenEdgeAttached:true, // has effect only when "nonSystemSheet:false"
+	nonModal:false, // has effect ONLY when "nonSystemSheet:false" on iOS >= 15
+	largestUndimmedDetentIdentifier:'small', // medium or large (also "small" available when "nonSystemSheet:true") - if not set, it is full dimmed depending on activated detents when "nonSystemSheet:true" the property also allow to interact with the view in the background of the bottomSheet - when not dimmed, when dimmed interaction is not possible with the view in the background ---  when customDetents are set enter here the "key" as string
+	contentView:listView,
+	closeButton:myCloseButton, // add a closeButtonView to the bottomSheet
+	backgroundColor:'#eeeeee', 
+	prefersGrabberVisible:true, // bottomSheet grabberHandle visible true / false
+
+	nonSystemSheet:false, // defaults to "true" if not set - non iOS 15 SheetController (backwards compatible to non iOS15) when "true" - iOS15+ SheetController when "false" - if non iOS15 and set to "false" it also defaults to "true"
+	nonSystemSheetAutomaticStartPositionFromContentViewHeight:false, // when this property is "true" the nonSystemSheet opens in the height of the contentView, all detents are disabled, only this state is active, "startDetent" property is ignored, also the "detents" property is ignored -- if you want an undimmed background, then you need to set property "largestUndimmedDetentIdentifier" to "large"
+	nonSystemSheetSmallHeight:200, 
+	nonSystemSheetMediumHeight:400, 
+	nonSystemSheetLargeHeight:700,
+	//nonSystemSheetHandleColor:'red',
 	nonSystemSheetDisablePanGestureDismiss:true, // disables the pan gesture (drag down to close), closing is only possible via closeButton then OR via "close" method
-	nonSystemSheetDisableDimmedBackground:true, // disables the dimmed backgroundView of the sheetcontroller
+	nonSystemSheetDisableDimmedBackgroundTouchDismiss:false, // disables the touch event on the dimmed backgroundView that will close the sheetController
+
+	nonSystemSheetDisableDimmedBackground:false, // disables the dimmed backgroundView of the sheetcontroller
+	nonSystemSheetTopShadow:true, // has effect only on "nonSystemSheet:true"
+	nonSystemSheetShouldScroll:false, // when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet 
+	// ATTENTION: when you put a tableView, scrollView or listView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
 });
 
 bottomSheetController.addEventListener('dismissing', function() {
