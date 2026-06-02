@@ -7,7 +7,7 @@
 
 #import "UISheetPresentationControllerDetent+CustomDetent.h"
 
-static NSString *const UISheetPresentationControllerDetentIdentifierCustomPrefix = @"UISheetPresentationController.Detent.Custom";
+NSString *const UISheetPresentationControllerDetentIdentifierCustomPrefix = @"UISheetPresentationController.Detent.Custom";
 
 API_AVAILABLE(ios(15.0),macCatalyst(15.0))
 UISheetPresentationControllerDetentIdentifier UISheetPresentationControllerDetentIdentifierCustom(CGFloat height) {

@@ -9,6 +9,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+FOUNDATION_EXPORT NSString *const UISheetPresentationControllerDetentIdentifierCustomPrefix;
 FOUNDATION_EXPORT UISheetPresentationControllerDetentIdentifier UISheetPresentationControllerDetentIdentifierCustom(CGFloat height);
 
 @interface UISheetPresentationControllerDetent (CustomDetent)

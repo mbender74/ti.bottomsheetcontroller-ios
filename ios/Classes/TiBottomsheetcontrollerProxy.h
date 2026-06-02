@@ -22,6 +22,7 @@
 
 #import <TitaniumKit/TiViewTemplate.h>
 #import "BottomSheetViewController.h"
+#import "UISheetPresentationControllerDetent+CustomDetent.h"
 
 
 @interface TiBottomsheetcontrollerProxy : TiProxy <UISheetPresentationControllerDelegate, UIGestureRecognizerDelegate, UIScrollViewDelegate, TiProxyObserver> {

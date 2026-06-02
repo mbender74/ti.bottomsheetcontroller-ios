@@ -1,8 +1,8 @@
 /**
- * ti.popover
+ * ti.bottomsheetcontroller
  *
- * Created by Your Name
- * Copyright (c) 2021 Your Company. All rights reserved.
+ * Created by Marc Bender
+ * Copyright (c) 2021 by Marc Bender. All rights reserved.
  */
 #define USE_TI_UINAVIGATIONWINDOW
 #define USE_TI_UISCROLLVIEW // Enable access to the core class

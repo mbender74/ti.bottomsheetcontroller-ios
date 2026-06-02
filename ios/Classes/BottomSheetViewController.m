@@ -57,7 +57,7 @@
     panFromScrollView = NO;
     width = 0;
     height = 0;
-    customViewRect;
+    customViewRect = CGRectZero;
     fullPositon = YES;
     mediumPosition = YES;
     smallPosition = YES;
@@ -472,28 +472,8 @@
         
     self.view.frame = rect;
     
-    if (tapEvent == YES){
-        if (customSheetScrollView){
-                customSheetScrollView.frame = customViewRect;
-                customView.frame = windowRect;
-
-            if (myParentProxy.fixedHeight == NO){
-                [myParentProxy.viewProxy reposition];
-
-                [myParentProxy.viewProxy layoutChildren:YES];
-                [myParentProxy.viewProxy willChangeSize];
-            }
-        }
-        else {
-            if (myParentProxy.fixedHeight == NO){
-                customView.frame = customViewRect;
-
-                [myParentProxy.viewProxy reposition];
-
-                [myParentProxy.viewProxy layoutChildren:YES];
-                [myParentProxy.viewProxy willChangeSize];
-            }
-        }
+    if (tapEvent == YES) {
+        [self repositionContentView];
     }
     
         
@@ -530,31 +510,8 @@
                 self.view.frame = rect;
 
                 if (recognizer.state != UIGestureRecognizerStateEnded) {
-                                
                     customViewRect.size.height = height - newY;
-
-                    if (customSheetScrollView){
-                            customSheetScrollView.frame = customViewRect;
-                            customView.frame = windowRect;
-
-                        if (myParentProxy.fixedHeight == NO){
-                            [myParentProxy.viewProxy reposition];
-
-                            [myParentProxy.viewProxy layoutChildren:YES];
-                            [myParentProxy.viewProxy willChangeSize];
-                        }
-                    }
-                    else {
-                        if (myParentProxy.fixedHeight == NO){
-                            customView.frame = customViewRect;
-
-                            [myParentProxy.viewProxy reposition];
-
-                            [myParentProxy.viewProxy layoutChildren:YES];
-                            [myParentProxy.viewProxy willChangeSize];
-                        }
-                    }
-
+                    [self repositionContentView];
                 }
                 [recognizer setTranslation:CGPointZero inView:self.view];
                 dismissModeOfSheet = NO;
@@ -574,29 +531,7 @@
 
             if (recognizer.state != UIGestureRecognizerStateEnded) {
                 customViewRect.size.height = height - newY;
-
-                if (customSheetScrollView){
-                        customSheetScrollView.frame = customViewRect;
-                        customView.frame = windowRect;
-
-                    if (myParentProxy.fixedHeight == NO){
-                        [myParentProxy.viewProxy reposition];
-
-                        [myParentProxy.viewProxy layoutChildren:YES];
-                        [myParentProxy.viewProxy willChangeSize];
-                    }
-                }
-                else {
-                    if (myParentProxy.fixedHeight == NO){
-                        customView.frame = customViewRect;
-
-                        [myParentProxy.viewProxy reposition];
-
-                        [myParentProxy.viewProxy layoutChildren:YES];
-                        [myParentProxy.viewProxy willChangeSize];
-                    }
-                }
-
+                [self repositionContentView];
             }
             [recognizer setTranslation:CGPointZero inView:self.view];
             if (newY > minPosition) {
@@ -618,6 +553,20 @@
 
 - (void)roundViews {
     self.view.clipsToBounds = NO;
+}
+
+- (void)repositionContentView {
+    if (myParentProxy.fixedHeight == NO) {
+        if (customSheetScrollView) {
+            customSheetScrollView.frame = customViewRect;
+            customView.frame = windowRect;
+        } else {
+            customView.frame = customViewRect;
+        }
+        [myParentProxy.viewProxy reposition];
+        [myParentProxy.viewProxy layoutChildren:YES];
+        [myParentProxy.viewProxy willChangeSize];
+    }
 }
 
 - (void)scrollView:(UIScrollView*)scrollview {
@@ -752,32 +701,11 @@
             }
 
             weakSelf.lastStatus = state;
-            
-            
+
+
             [weakSelf moveView:state fromEvent:NO];
-            if (director == up){
-                if (customSheetScrollView){
-                        customSheetScrollView.frame = customViewRect;
-                        customView.frame = windowRect;
-
-                    if (myParentProxy.fixedHeight == NO){
-                        [myParentProxy.viewProxy reposition];
-
-                        [myParentProxy.viewProxy layoutChildren:YES];
-                        [myParentProxy.viewProxy willChangeSize];
-                    }
-                }
-                else {
-
-                    if (myParentProxy.fixedHeight == NO){
-                        customView.frame = customViewRect;
-
-                        [myParentProxy.viewProxy reposition];
-
-                        [myParentProxy.viewProxy layoutChildren:YES];
-                        [myParentProxy.viewProxy willChangeSize];
-                    }
-                }
+            if (director == up) {
+                [weakSelf repositionContentView];
             }
 
                    
@@ -865,32 +793,8 @@
 
             
                 } completion:^(BOOL finished) {
-                    if (director == down){
-                        if (customSheetScrollView){
-                                customSheetScrollView.frame = customViewRect;
-                                customView.frame = windowRect;
-
-                            if (myParentProxy.fixedHeight == NO){
-                                [myParentProxy.viewProxy reposition];
-
-                                [myParentProxy.viewProxy willChangeSize];
-                                [myParentProxy.viewProxy layoutChildren:YES];
-
-                            }
-                        }
-                        else {
-
-                            if (myParentProxy.fixedHeight == NO){
-                                customView.frame = customViewRect;
-
-                                [myParentProxy.viewProxy reposition];
-
-                                [myParentProxy.viewProxy willChangeSize];
-                                [myParentProxy.viewProxy layoutChildren:YES];
-                            }
-                        }
-
-
+                    if (director == down) {
+                        [weakSelf repositionContentView];
                     }
                 }];
     }
