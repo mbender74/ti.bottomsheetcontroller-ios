@@ -246,6 +246,20 @@
     }
 }
 
+- (void)cleanup:(id)args
+{
+    if (bottomSheetInitialized == NO) {
+        NSLog(@"[INFO] BottomSheet is not open. No cleanup needed.");
+        return;
+    }
+
+    TiThreadPerformOnMainThread(
+        ^{
+            [self cleanup];
+        },
+      NO);
+}
+
 - (void)open:(id)args
 {
   ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
@@ -917,6 +931,15 @@
         customBottomSheet = [BottomSheetViewController new];
         [customBottomSheet setProxyOfBottomSheetController:self];
         
+        // Set contentViewOfSheet early so viewDidLoad can access it
+        if ([[[contentViewProxy class] description] isEqualToString:@"TiUINavigationWindowProxy"]) {
+            centerProxy = [self valueForUndefinedKey:@"contentView"];
+            contentViewOfSheet = [[centerProxy controller] view];
+        }
+        else {
+            contentViewOfSheet = [contentViewProxy view];
+        }
+        
         CGFloat y = [[[TiApp app] controller] topPresentedController].view.frame.origin.y;
         CGFloat height = [[[TiApp app] controller] topPresentedController].view.frame.size.height;
         CGFloat width = [[[TiApp app] controller] topPresentedController].view.frame.size.width;
@@ -993,14 +1016,6 @@
 
         if ([[[contentViewProxy class] description] isEqualToString:@"TiUINavigationWindowProxy"]) {
           useNavController = YES;
-        }
-        
-        if (useNavController) {
-            centerProxy = [self valueForUndefinedKey:@"contentView"];
-            contentViewOfSheet = [[centerProxy controller] view];
-        }
-        else {
-            contentViewOfSheet = [contentViewProxy view];
         }
         
         CGFloat heightOfContainer;
