@@ -130,6 +130,9 @@
 #pragma mark -
 
 - (void)setupData {
+    printf("[INFO] setupData: ENTERED\n");
+    fflush(stdout);
+    
     dismissModeOfSheet = NO;
     backgroundViewHidden = YES;
     viewBackgroundColor = [UIColor clearColor];
