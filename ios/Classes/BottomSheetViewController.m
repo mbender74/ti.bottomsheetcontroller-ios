@@ -147,6 +147,9 @@
         return;
     }
     
+    NSLog(@"[INFO] setupData: starting, proxy retainCount = %lu", (unsigned long)[myParentProxy retainCount]);
+    
+    NSLog(@"[INFO] setupData: checking nonSystemSheetSmallHeight");
     if ([myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]){
         self.partialViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]];
     }
