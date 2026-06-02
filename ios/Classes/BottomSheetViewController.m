@@ -30,16 +30,9 @@
 -(void)setProxyOfBottomSheetController:(id)args
 {
     if (myParentProxy != args) {
-        [myParentProxy release];
-        myParentProxy = [args retain];
+        myParentProxy = args;
         NSLog(@"[INFO] BottomSheetViewController: proxy set to %@", myParentProxy);
     }
-}
-
-- (void)dealloc
-{
-    [myParentProxy release];
-    [super dealloc];
 }
 
 
