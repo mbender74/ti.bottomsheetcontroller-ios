@@ -82,9 +82,13 @@
     self.partialViewYPosition = _partialViewYPosition;
     self.expandedViewYPosition = _expandedViewYPosition;
     customView = [myParentProxy contentViewOfSheet];
-    windowRect = customView.frame;
+    if (customView != nil) {
+        windowRect = customView.frame;
+    }
 
-    [self setupData];
+    if (myParentProxy != nil) {
+        [self setupData];
+    }
     [self setupGestureEvent];
 }
 
