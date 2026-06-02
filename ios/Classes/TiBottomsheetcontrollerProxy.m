@@ -22,6 +22,30 @@
 
 #pragma mark Setup
 
+
+//- (id)_initWithPageContext:(id<TiEvaluator>)context args:(id)args
+//{
+//    if (self = [super _initWithPageContext:context]) {
+//        bottomSheetclosingCondition = [[NSCondition alloc] init];
+//        poWidth = TiDimensionUndefined;
+//        poHeight = TiDimensionUndefined;
+//        poBWidth = TiDimensionUndefined;
+//        poBHeight = TiDimensionUndefined;
+//        nonSystemSheetShouldScroll = NO;
+//        defaultsToNonSystemSheet = YES;
+//        nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
+//        useNavController = NO;
+//        bottomSheetInitialized = NO;
+//        contentViewScrollingDisabled = NO;
+//        UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
+//        bottomSheetSafeAreaInset = [[topContainerController hostingView] safeAreaInsets];
+//    }
+//    
+//    return self;
+//}
+
+
+
 - (id)init
 {
     if (self = [super init]) {
@@ -48,18 +72,15 @@
 - (void)dealloc
 {
     //[[NSNotificationCenter defaultCenter] removeObserver:self];
-    if (viewController != nil && viewController.view != nil) {
-        [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
-    }
+    [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
     RELEASE_TO_NIL(viewController);
     bottomSheetInitialized = NO;
     currentTiBottomSheet = nil;
     nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
    // RELEASE_TO_NIL(bottomSheetclosingCondition);
-      #if !TARGET_OS_MACCATALYST
-    if (bottomSheet != nil) {
-        bottomSheet.delegate = nil;
-    }
+    RELEASE_TO_NIL(contentViewProxy);
+    #if !TARGET_OS_MACCATALYST
+    bottomSheet.delegate = nil;
     #endif
     RELEASE_TO_NIL(customBottomSheet);
     RELEASE_TO_NIL(bottomSheet);
@@ -80,24 +101,21 @@
 {
     if (defaultsToNonSystemSheet == NO){
         if (@available(iOS 15, macCatalyst 15, *)) {
-            if ([bottomSheet.selectedDetentIdentifier isEqualToString:UISheetPresentationControllerDetentIdentifierMedium]){
+            if (bottomSheet.selectedDetentIdentifier == UISheetPresentationControllerDetentIdentifierMedium){
                 return @"medium";
             }
-            else if ([bottomSheet.selectedDetentIdentifier isEqualToString:UISheetPresentationControllerDetentIdentifierLarge]){
+            else if (bottomSheet.selectedDetentIdentifier == UISheetPresentationControllerDetentIdentifierLarge){
                 return @"large";
             }
-            else if ([bottomSheet.selectedDetentIdentifier hasPrefix:UISheetPresentationControllerDetentIdentifierCustomPrefix]){
-                return @"custom";
+            else {
+                return @"none";
             }
         }
-        return @"none";
     }
     else {
-        if (customBottomSheet != nil) {
-            return customBottomSheet.selectedDetentIdentifier;
-        }
+        return customBottomSheet.selectedDetentIdentifier;
     }
-    return @"none";
+    
 }
 
 - (void)changeCurrentDetent:(id)value
@@ -157,7 +175,8 @@
   if (closeButtonProxy != nil) {
     //  NSLog(@"release closeButtonproxy ");
 
-      }
+      RELEASE_TO_NIL(closeButtonProxy);
+  }
 
    // NSLog(@"closeButton ");
 
@@ -199,7 +218,8 @@
 {
   ENSURE_SINGLE_ARG(value, TiViewProxy);
   if (contentViewProxy != nil) {
-    }
+    RELEASE_TO_NIL(contentViewProxy);
+  }
   contentViewProxy = [(TiViewProxy *)value retain];
   self.viewProxy = contentViewProxy;
   [self replaceValue:contentViewProxy forKey:@"contentView" notification:NO];
@@ -244,20 +264,6 @@
     if (![self _hasListeners:type]) {
         [super addEventListener:args];
     }
-}
-
-- (void)cleanup:(id)args
-{
-    if (bottomSheetInitialized == NO) {
-        NSLog(@"[INFO] BottomSheet is not open. No cleanup needed.");
-        return;
-    }
-
-    TiThreadPerformOnMainThread(
-        ^{
-            [self cleanup];
-        },
-      NO);
 }
 
 - (void)open:(id)args
@@ -399,7 +405,12 @@
 
 - (UIView *)backgroundView
 {
-    return backgroundView;
+    if (backgroundView != nil){
+        return backgroundView;
+    }
+    else {
+        return nil;
+    }
 }
 
 - (UIView *)contentViewOfSheet
@@ -421,11 +432,12 @@
   if (viewController == nil) {
     if ([contentViewProxy isKindOfClass:[TiWindowProxy class]]) {
       [(TiWindowProxy *)contentViewProxy setIsManaged:YES];
-      viewController = [[(TiWindowProxy *)contentViewProxy hostingController] retain];
+        viewController = [[(TiWindowProxy *)contentViewProxy hostingController] retain];
+      [viewController.view addObserver:self forKeyPath:@"safeAreaInsets" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
     } else {
       viewController = [[TiViewController alloc] initWithViewProxy:contentViewProxy];
+      [viewController.view addObserver:self forKeyPath:@"safeAreaInsets" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
     }
-    [viewController.view addObserver:self forKeyPath:@"safeAreaInsets" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
   }
   viewController.view.clipsToBounds = NO;
   return viewController;
@@ -466,8 +478,10 @@
   customBottomSheet = nil;
   viewController = nil;
   closeButtonView = nil;
+  closeButtonProxy = nil;
   currentTiBottomSheet = nil;
  // bottomSheetclosingCondition = nil;
+  contentViewProxy = nil;
   centerProxy = nil;
   if (@available(iOS 15, *)) {
     [_detents release];
@@ -478,9 +492,15 @@
   RELEASE_TO_NIL(customBottomSheet);
   RELEASE_TO_NIL(viewController);
   RELEASE_TO_NIL(closeButtonView);
+  RELEASE_TO_NIL(closeButtonProxy);
   RELEASE_TO_NIL(currentTiBottomSheet);
   //RELEASE_TO_NIL(bottomSheetclosingCondition);
+  RELEASE_TO_NIL(contentViewProxy);
   RELEASE_TO_NIL(centerProxy);
+  [self forgetSelf];
+  [self _destroy];
+  [self autorelease];
+  //[self release];
 }
 
 - (void)initAndShowSheetController
@@ -726,12 +746,16 @@
 
 - (void)updateContentSize
 {
-    CGSize newSize = [self contentSize:contentViewProxy];
+   // TiThreadPerformOnMainThread(
+   //     ^{
+            CGSize newSize = [self contentSize:contentViewProxy];
 
-    if (defaultsToNonSystemSheet == NO){
-         [[self viewController] setPreferredContentSize:newSize];
-    }
-    [contentViewProxy reposition];
+            if (defaultsToNonSystemSheet == NO){
+                 [[self viewController] setPreferredContentSize:newSize];
+            }
+            [contentViewProxy reposition];
+      //  },
+      //  NO);
 }
 
 
@@ -927,15 +951,6 @@
         customBottomSheet = [BottomSheetViewController new];
         [customBottomSheet setProxyOfBottomSheetController:self];
         
-        // Set contentViewOfSheet early so viewDidLoad can access it
-        if ([[[contentViewProxy class] description] isEqualToString:@"TiUINavigationWindowProxy"]) {
-            centerProxy = [self valueForUndefinedKey:@"contentView"];
-            contentViewOfSheet = [[centerProxy controller] view];
-        }
-        else {
-            contentViewOfSheet = [contentViewProxy view];
-        }
-        
         CGFloat y = [[[TiApp app] controller] topPresentedController].view.frame.origin.y;
         CGFloat height = [[[TiApp app] controller] topPresentedController].view.frame.size.height;
         CGFloat width = [[[TiApp app] controller] topPresentedController].view.frame.size.width;
@@ -1012,6 +1027,14 @@
 
         if ([[[contentViewProxy class] description] isEqualToString:@"TiUINavigationWindowProxy"]) {
           useNavController = YES;
+        }
+        
+        if (useNavController) {
+            centerProxy = [self valueForUndefinedKey:@"contentView"];
+            contentViewOfSheet = [[centerProxy controller] view];
+        }
+        else {
+            contentViewOfSheet = [contentViewProxy view];
         }
         
         CGFloat heightOfContainer;
@@ -1275,66 +1298,87 @@
 {
     NSDictionary *userDetents = [self valueForKey:@"detents"];
 
-    // State constants: partial=0, expanded=1, full=2
-    static const State statePartial = 0;
-    static const State stateExpanded = 1;
-    static const State stateFull = 2;
-
     [UIView animateWithDuration:0.15 animations:^{
         [handle setAlpha:0.3f];
     } completion:^(BOOL finished) {
-            if (customBottomSheet.lastStatus == statePartial){
+            if (customBottomSheet.lastStatus == 0){
                 if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    customBottomSheet.lastStatus = stateExpanded;
+                    customBottomSheet.lastStatus = 1;
 
                     [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:stateExpanded fromEvent:YES];
-                    } completion:nil];
+                        [customBottomSheet moveView:1 fromEvent:YES];
+                    } completion:^(BOOL finished) {
+                    }];
                     [self sendEvent:@"medium"];
+
                 }
                 else if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
-                    customBottomSheet.lastStatus = stateFull;
+                    customBottomSheet.lastStatus = 2;
 
                     [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:stateFull fromEvent:YES];
-                    } completion:nil];
+                        [customBottomSheet moveView:2 fromEvent:YES];
+                    } completion:^(BOOL finished) {
+
+                    }];
                     [self sendEvent:@"large"];
+
+                }
+                else {
+                    
+                    
+                    
                 }
             }
-            else if (customBottomSheet.lastStatus == stateExpanded){
+
+            else if (customBottomSheet.lastStatus == 1){
                 if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
-                    customBottomSheet.lastStatus = stateFull;
+                    customBottomSheet.lastStatus = 2;
 
                     [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:stateFull fromEvent:YES];
-                    } completion:nil];
+                        [customBottomSheet moveView:2 fromEvent:YES];
+                    } completion:^(BOOL finished) {
+                    }];
                     [self sendEvent:@"large"];
+
                 }
                 else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
-                    customBottomSheet.lastStatus = statePartial;
+                    customBottomSheet.lastStatus = 0;
 
                     [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:statePartial fromEvent:YES];
-                    } completion:nil];
+                        [customBottomSheet moveView:0 fromEvent:YES];
+                    } completion:^(BOOL finished) {
+                    }];
                     [self sendEvent:@"small"];
+
+                }
+                else {
+
                 }
             }
-            else if (customBottomSheet.lastStatus == stateFull){
+
+            else if (customBottomSheet.lastStatus == 2){
                 if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
-                    customBottomSheet.lastStatus = statePartial;
+                    customBottomSheet.lastStatus = 0;
 
                     [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:statePartial fromEvent:YES];
-                    } completion:nil];
+                        [customBottomSheet moveView:0 fromEvent:YES];
+                    } completion:^(BOOL finished) {
+                    }];
                     [self sendEvent:@"small"];
+
                 }
                 else if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    customBottomSheet.lastStatus = stateExpanded;
+                    customBottomSheet.lastStatus = 1;
 
                     [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:stateExpanded fromEvent:YES];
-                    } completion:nil];
+                        [customBottomSheet moveView:1 fromEvent:YES];
+                    } completion:^(BOOL finished) {
+                    }];
                     [self sendEvent:@"medium"];
+
+                }
+                else {
+                    
                 }
             }
             [UIView animateWithDuration:0.15 animations:^{

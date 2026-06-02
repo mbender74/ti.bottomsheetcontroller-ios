@@ -1,9 +1,9 @@
 //
 //  BottomSheetViewController.m
-//  ti.bottomsheetcontroller-ios
+//  navi-lite
 //
-//  Created by Marc Bender on 2020/5/29.
-//  Copyright © 2020 by Marc Bender. All rights reserved.
+//  Created by Phineas.Huang on 2020/5/29.
+//  Copyright © 2020 Garmin. All rights reserved.
 //
 #define USE_TI_UINAVIGATIONWINDOW
 #import "BottomSheetViewController.h"
@@ -22,18 +22,24 @@
 
 #pragma mark Public APIs
 
+
 -(id)proxyOfBottomSheetController
 {
-    return myParentProxy;
-}
-
--(void)setProxyOfBottomSheetController:(id)args
-{
-    if (myParentProxy != args) {
-        myParentProxy = args;
-        NSLog(@"[INFO] BottomSheetViewController: proxy set to %@", myParentProxy);
+    if (myParentProxy != nil){
+        return myParentProxy;
+    }
+    else {
+        return nil;
     }
 }
+-(void)setProxyOfBottomSheetController:(id)args
+{
+    if (myParentProxy != nil){
+        myParentProxy = nil;
+    }
+    myParentProxy = args;
+}
+
 
 
 #pragma mark -
@@ -51,7 +57,7 @@
     panFromScrollView = NO;
     width = 0;
     height = 0;
-    customViewRect = CGRectZero;
+    customViewRect;
     fullPositon = YES;
     mediumPosition = YES;
     smallPosition = YES;
@@ -76,14 +82,9 @@
     self.partialViewYPosition = _partialViewYPosition;
     self.expandedViewYPosition = _expandedViewYPosition;
     customView = [myParentProxy contentViewOfSheet];
-    if (customView != nil) {
-        windowRect = customView.frame;
-    }
+    windowRect = customView.frame;
 
-    if (myParentProxy != nil) {
-        NSLog(@"[INFO] viewDidLoad: calling setupData with proxy %@", myParentProxy);
-        [self setupData];
-    }
+    [self setupData];
     [self setupGestureEvent];
 }
 
@@ -102,6 +103,7 @@
         }
         [weakSelf moveView:weakSelf.lastStatus fromEvent:NO];
     } completion:^(BOOL finished) {
+        
         CGFloat startY = _fullViewYPosition;
 
         if (self.lastStatus == partial) {
@@ -112,17 +114,28 @@
         customView = [myParentProxy contentViewOfSheet];
         windowRect = customView.frame;
 
-        if (customSheetScrollView) {
-            customViewRect = customSheetScrollView.frame;
-        } else {
-            customViewRect = customView.frame;
-        }
-        customViewRect.size.height = self.view.frame.size.height - startY;
+        if (customSheetScrollView){
+                customViewRect = customSheetScrollView.frame;
+                customViewRect.size.height = self.view.frame.size.height - startY;
+                customSheetScrollView.frame = customViewRect;
+                customView.frame = windowRect;
 
-        if (myParentProxy.fixedHeight == NO) {
-            [myParentProxy.viewProxy reposition];
-            [myParentProxy.viewProxy layoutChildrenIfNeeded];
+            if (myParentProxy.fixedHeight == NO){
+                [myParentProxy.viewProxy reposition];
+                [myParentProxy.viewProxy layoutChildrenIfNeeded];
+            }
         }
+        else {
+            if (myParentProxy.fixedHeight == NO){
+                customViewRect = customView.frame;
+                customViewRect.size.height = self.view.frame.size.height - startY;
+                customView.frame = customViewRect;
+
+                [myParentProxy.viewProxy reposition];
+                [myParentProxy.viewProxy layoutChildrenIfNeeded];
+            }
+        }
+
     }];
     [myParentProxy fireEvent:@"open" withObject:nil];
 }
@@ -130,24 +143,12 @@
 #pragma mark -
 
 - (void)setupData {
-    printf("[INFO] setupData: ENTERED\n");
-    fflush(stdout);
-    
     dismissModeOfSheet = NO;
     backgroundViewHidden = YES;
     viewBackgroundColor = [UIColor clearColor];
     dimmedViewBackgroundColor = [[TiUtils colorValue:@"#22000000"] _color];
     
-    if (myParentProxy == nil) {
-        NSLog(@"[WARN] setupData called with nil myParentProxy");
-        return;
-    }
     
-    printf("[INFO] setupData: starting, proxy = %p\n", (void*)myParentProxy);
-    fflush(stdout);
-    
-    printf("[INFO] setupData: checking nonSystemSheetSmallHeight\n");
-    fflush(stdout);
     if ([myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]){
         self.partialViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]];
     }
@@ -186,53 +187,70 @@
     
     if ([myParentProxy valueForKey:@"detents"]){
         userDetents = [myParentProxy valueForKey:@"detents"];
-
-        BOOL hasLarge = [TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES];
-        BOOL hasMedium = [TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES];
-        BOOL hasSmall = [TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES];
-
-        // Determine max/min positions based on available detents
-        if (hasLarge) {
+        
+        if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
             maxPosition = _fullViewYPosition;
             maxState = full;
+            if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && ![TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
+                mediumPosition = NO;
+                smallPosition = NO;
+
+                minPosition = _fullViewYPosition;
+                minState = full;
+                startDetent = @"large";
+            }
+            else {
+                if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && [TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
+                    minPosition = _expandedViewYPosition;
+                    minState = expanded;
+                    smallPosition = NO;
+
+                    if (![startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"]){
+                        startDetent = @"medium";
+                    }
+                }
+                else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && ![TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
+                    mediumPosition = NO;
+
+                    if ([startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"]){
+                        startDetent = @"small";
+                    }
+                }
+            }
         }
-        else if (hasMedium) {
+        else if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
             maxPosition = _expandedViewYPosition;
             maxState = expanded;
             fullPositon = NO;
+
+            if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
+                minPosition = _expandedViewYPosition;
+                minState = expanded;
+                smallPosition = NO;
+
+                if ([startDetent isEqual:@"small"] || [startDetent isEqual:@"large"]){
+                    startDetent = @"medium";
+                }
+            }
+            else {
+                if ([startDetent isEqual:@"large"]){
+                    startDetent = @"medium";
+                }
+            }
         }
-        else if (hasSmall) {
+        else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
             maxPosition = _partialViewYPosition;
             maxState = partial;
             mediumPosition = NO;
             fullPositon = NO;
-        }
 
-        if (!hasSmall) {
-            smallPosition = NO;
-            minPosition = _expandedViewYPosition;
-            minState = expanded;
-        }
-        if (!hasMedium) {
-            mediumPosition = NO;
-            if (hasLarge) {
-                minPosition = _fullViewYPosition;
-                minState = full;
+            if ([startDetent isEqual:@"medium"] || [startDetent isEqual:@"large"]){
+                startDetent = @"small";
             }
         }
-
-        // Adjust startDetent to a valid detent
-        if (![startDetent isEqual:@"small"] && ![startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"] && hasSmall) {
-            startDetent = @"small";
-        }
-        if ([startDetent isEqual:@"small"] && !hasSmall) {
-            startDetent = hasMedium ? @"medium" : @"large";
-        }
-        if ([startDetent isEqual:@"medium"] && !hasMedium) {
-            startDetent = hasSmall ? @"small" : @"large";
-        }
-        if ([startDetent isEqual:@"large"] && !hasLarge) {
-            startDetent = hasMedium ? @"medium" : @"small";
+        else {
+            maxPosition = _fullViewYPosition;
+            maxState = full;
         }
     }
     
@@ -260,33 +278,66 @@
     else {
         largestUndimmedDetent = @"small";
     }
-
-    // Determine initial state from startDetent
-    NSString *currentUndimmed = nil;
-    if ([startDetent isEqual: @"small"]) {
-        self.lastStatus = partial;
-        currentUndimmed = @"small";
+    
+   
+    if ([startDetent isEqual: @"small"]){
+        if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
+            self.lastStatus = partial;
+            
+            if (![largestUndimmedDetent isEqual: @"small"]){
+                backgroundViewHidden = NO;
+                viewBackgroundColor = dimmedViewBackgroundColor;
+            }
+        }
+        else {
+            self.lastStatus = expanded;
+            
+            if (![largestUndimmedDetent isEqual: @"medium"]){
+                backgroundViewHidden = NO;
+                viewBackgroundColor = dimmedViewBackgroundColor;
+            }
+        }
     }
-    else if ([startDetent isEqual: @"medium"]) {
-        self.lastStatus = expanded;
-        currentUndimmed = @"medium";
+    else if ([startDetent isEqual: @"medium"]){
+        if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
+            self.lastStatus = expanded;
+            if (![largestUndimmedDetent isEqual: @"medium"]){
+                backgroundViewHidden = NO;
+                viewBackgroundColor = dimmedViewBackgroundColor;
+            }
+        }
+        else {
+            self.lastStatus = full;
+            if (![largestUndimmedDetent isEqual: @"full"]){
+                backgroundViewHidden = NO;
+                viewBackgroundColor = dimmedViewBackgroundColor;
+            }
+        }
     }
-    else if ([startDetent isEqual: @"large"]) {
-        self.lastStatus = full;
-        currentUndimmed = @"full";
+    else if ([startDetent isEqual: @"large"]){
+        if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
+            self.lastStatus = full;
+            if (![largestUndimmedDetent isEqual: @"full"]){
+                backgroundViewHidden = NO;
+                viewBackgroundColor = dimmedViewBackgroundColor;
+            }
+        }
+        else {
+            self.lastStatus = expanded;
+            if (![largestUndimmedDetent isEqual: @"medium"]){
+                backgroundViewHidden = NO;
+                viewBackgroundColor = dimmedViewBackgroundColor;
+            }
+        }
     }
     else {
         self.lastStatus = expanded;
-        currentUndimmed = nil;
+        if ([largestUndimmedDetent isEqual: @"small"]){
+            backgroundViewHidden = NO;
+            viewBackgroundColor = dimmedViewBackgroundColor;
+        }
     }
-
-    // Set background dimming if current state is larger than undimmed detent
-    if (currentUndimmed != nil && ![currentUndimmed isEqual: largestUndimmedDetent]) {
-        backgroundViewHidden = NO;
-        viewBackgroundColor = dimmedViewBackgroundColor;
-    }
-
-    if ([myParentProxy backgroundView] != nil) {
+    if ([myParentProxy backgroundView] != nil){
         [myParentProxy backgroundView].hidden = backgroundViewHidden;
     }
 }
@@ -296,29 +347,70 @@
 - (void)changeInsets:(UIView *)view
 {
     CGFloat bottomIntent = safeAreaInset.bottom;
+    CGFloat topInset;
+    CGFloat diffPos = (yPosition-(yPosition-maxPosition));
+    
     
     if (self.lastStatus == partial) {
-        bottomIntent = (height - 130) + safeAreaInset.bottom;
-    }
+                bottomIntent = ((height)-130)+safeAreaInset.bottom;
+            }
     else if (self.lastStatus == expanded) {
-        bottomIntent = (height / 2) + safeAreaInset.bottom;
+                bottomIntent = ((height/2))+safeAreaInset.bottom;
     }
     else {
-        bottomIntent = safeAreaInset.bottom + 100;
+                bottomIntent = safeAreaInset.bottom + 100;
     }
     
     if ([view respondsToSelector:@selector(setScrollEnabled:)]){
-        UIScrollView *scrollView = (UIScrollView *)view;
-        CGFloat topInset = scrollView.contentInset.top;
 
-        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
-        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
-        [scrollView setContentInset:insets];
-        [scrollView setScrollIndicatorInsets:scrollBarinsets];
+            if ([view isKindOfClass:[UITableView class]]){
+                UITableView *thisTableView = (UITableView *)view;
+                topInset = thisTableView.contentInset.top;
+
+                scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent - 20, 0);
+                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
+                [thisTableView setContentInset:insets];
+                [thisTableView setScrollIndicatorInsets:scrollBarinsets];
+            }
+            else if ([view isKindOfClass:[UIScrollView class]]){
+                UIScrollView *thisTableView = (UIScrollView *)view;
+                topInset = thisTableView.contentInset.top;
+                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
+                scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+                [thisTableView setContentInset:insets];
+                [thisTableView setScrollIndicatorInsets:scrollBarinsets];
+            }
+            else {
+            }
     }
-    
-    for (UIView *eachView in view.subviews) {
-        [self changeInsets:eachView];
+    else {
+        for (UIView *eachView in view.subviews) {
+
+            if ([eachView respondsToSelector:@selector(setScrollEnabled:)]){
+                    
+                    if ([eachView isKindOfClass:[UITableView class]]){
+                        UITableView *thisTableView = (UITableView *)eachView;
+                        topInset = thisTableView.contentInset.top;
+                        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent, 0);
+                        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+
+                        [thisTableView setContentInset:insets];
+                        [thisTableView setScrollIndicatorInsets:scrollBarinsets];
+                    }
+                    else if ([eachView isKindOfClass:[UIScrollView class]]){
+                        UIScrollView *thisTableView = (UIScrollView *)eachView;
+                        topInset = thisTableView.contentInset.top;
+                        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
+                        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+
+                        [thisTableView setContentInset:insets];
+                        [thisTableView setScrollIndicatorInsets:scrollBarinsets];
+                    }
+                    else {
+                    }
+            }
+            [self changeInsets:eachView];
+        }
     }
 }
 
@@ -380,8 +472,28 @@
         
     self.view.frame = rect;
     
-    if (tapEvent == YES) {
-        [self repositionContentView];
+    if (tapEvent == YES){
+        if (customSheetScrollView){
+                customSheetScrollView.frame = customViewRect;
+                customView.frame = windowRect;
+
+            if (myParentProxy.fixedHeight == NO){
+                [myParentProxy.viewProxy reposition];
+
+                [myParentProxy.viewProxy layoutChildren:YES];
+                [myParentProxy.viewProxy willChangeSize];
+            }
+        }
+        else {
+            if (myParentProxy.fixedHeight == NO){
+                customView.frame = customViewRect;
+
+                [myParentProxy.viewProxy reposition];
+
+                [myParentProxy.viewProxy layoutChildren:YES];
+                [myParentProxy.viewProxy willChangeSize];
+            }
+        }
     }
     
         
@@ -418,8 +530,31 @@
                 self.view.frame = rect;
 
                 if (recognizer.state != UIGestureRecognizerStateEnded) {
+                                
                     customViewRect.size.height = height - newY;
-                    [self repositionContentView];
+
+                    if (customSheetScrollView){
+                            customSheetScrollView.frame = customViewRect;
+                            customView.frame = windowRect;
+
+                        if (myParentProxy.fixedHeight == NO){
+                            [myParentProxy.viewProxy reposition];
+
+                            [myParentProxy.viewProxy layoutChildren:YES];
+                            [myParentProxy.viewProxy willChangeSize];
+                        }
+                    }
+                    else {
+                        if (myParentProxy.fixedHeight == NO){
+                            customView.frame = customViewRect;
+
+                            [myParentProxy.viewProxy reposition];
+
+                            [myParentProxy.viewProxy layoutChildren:YES];
+                            [myParentProxy.viewProxy willChangeSize];
+                        }
+                    }
+
                 }
                 [recognizer setTranslation:CGPointZero inView:self.view];
                 dismissModeOfSheet = NO;
@@ -439,7 +574,29 @@
 
             if (recognizer.state != UIGestureRecognizerStateEnded) {
                 customViewRect.size.height = height - newY;
-                [self repositionContentView];
+
+                if (customSheetScrollView){
+                        customSheetScrollView.frame = customViewRect;
+                        customView.frame = windowRect;
+
+                    if (myParentProxy.fixedHeight == NO){
+                        [myParentProxy.viewProxy reposition];
+
+                        [myParentProxy.viewProxy layoutChildren:YES];
+                        [myParentProxy.viewProxy willChangeSize];
+                    }
+                }
+                else {
+                    if (myParentProxy.fixedHeight == NO){
+                        customView.frame = customViewRect;
+
+                        [myParentProxy.viewProxy reposition];
+
+                        [myParentProxy.viewProxy layoutChildren:YES];
+                        [myParentProxy.viewProxy willChangeSize];
+                    }
+                }
+
             }
             [recognizer setTranslation:CGPointZero inView:self.view];
             if (newY > minPosition) {
@@ -461,20 +618,6 @@
 
 - (void)roundViews {
     self.view.clipsToBounds = NO;
-}
-
-- (void)repositionContentView {
-    if (myParentProxy.fixedHeight == NO) {
-        if (customSheetScrollView) {
-            customSheetScrollView.frame = customViewRect;
-            customView.frame = windowRect;
-        } else {
-            customView.frame = customViewRect;
-        }
-        [myParentProxy.viewProxy reposition];
-        [myParentProxy.viewProxy layoutChildren:YES];
-        [myParentProxy.viewProxy willChangeSize];
-    }
 }
 
 - (void)scrollView:(UIScrollView*)scrollview {
@@ -609,11 +752,32 @@
             }
 
             weakSelf.lastStatus = state;
-
-
+            
+            
             [weakSelf moveView:state fromEvent:NO];
-            if (director == up) {
-                [weakSelf repositionContentView];
+            if (director == up){
+                if (customSheetScrollView){
+                        customSheetScrollView.frame = customViewRect;
+                        customView.frame = windowRect;
+
+                    if (myParentProxy.fixedHeight == NO){
+                        [myParentProxy.viewProxy reposition];
+
+                        [myParentProxy.viewProxy layoutChildren:YES];
+                        [myParentProxy.viewProxy willChangeSize];
+                    }
+                }
+                else {
+
+                    if (myParentProxy.fixedHeight == NO){
+                        customView.frame = customViewRect;
+
+                        [myParentProxy.viewProxy reposition];
+
+                        [myParentProxy.viewProxy layoutChildren:YES];
+                        [myParentProxy.viewProxy willChangeSize];
+                    }
+                }
             }
 
                    
@@ -701,8 +865,32 @@
 
             
                 } completion:^(BOOL finished) {
-                    if (director == down) {
-                        [weakSelf repositionContentView];
+                    if (director == down){
+                        if (customSheetScrollView){
+                                customSheetScrollView.frame = customViewRect;
+                                customView.frame = windowRect;
+
+                            if (myParentProxy.fixedHeight == NO){
+                                [myParentProxy.viewProxy reposition];
+
+                                [myParentProxy.viewProxy willChangeSize];
+                                [myParentProxy.viewProxy layoutChildren:YES];
+
+                            }
+                        }
+                        else {
+
+                            if (myParentProxy.fixedHeight == NO){
+                                customView.frame = customViewRect;
+
+                                [myParentProxy.viewProxy reposition];
+
+                                [myParentProxy.viewProxy willChangeSize];
+                                [myParentProxy.viewProxy layoutChildren:YES];
+                            }
+                        }
+
+
                     }
                 }];
     }
