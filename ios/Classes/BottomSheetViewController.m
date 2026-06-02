@@ -140,6 +140,7 @@
     viewBackgroundColor = [UIColor clearColor];
     dimmedViewBackgroundColor = [[TiUtils colorValue:@"#22000000"] _color];
     
+    if (myParentProxy == nil) return;
     
     if ([myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]){
         self.partialViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]];
