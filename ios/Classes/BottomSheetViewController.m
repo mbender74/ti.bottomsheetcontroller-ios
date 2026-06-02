@@ -1,9 +1,9 @@
 //
 //  BottomSheetViewController.m
-//  navi-lite
+//  ti.bottomsheetcontroller-ios
 //
-//  Created by Phineas.Huang on 2020/5/29.
-//  Copyright © 2020 Garmin. All rights reserved.
+//  Created by Marc Bender on 2020/5/29.
+//  Copyright © 2020 by Marc Bender. All rights reserved.
 //
 #define USE_TI_UINAVIGATIONWINDOW
 #import "BottomSheetViewController.h"
@@ -22,21 +22,13 @@
 
 #pragma mark Public APIs
 
-
 -(id)proxyOfBottomSheetController
 {
-    if (myParentProxy != nil){
-        return myParentProxy;
-    }
-    else {
-        return nil;
-    }
+    return myParentProxy;
 }
+
 -(void)setProxyOfBottomSheetController:(id)args
 {
-    if (myParentProxy != nil){
-        myParentProxy = nil;
-    }
     myParentProxy = args;
 }
 
@@ -103,7 +95,6 @@
         }
         [weakSelf moveView:weakSelf.lastStatus fromEvent:NO];
     } completion:^(BOOL finished) {
-        
         CGFloat startY = _fullViewYPosition;
 
         if (self.lastStatus == partial) {
@@ -114,28 +105,17 @@
         customView = [myParentProxy contentViewOfSheet];
         windowRect = customView.frame;
 
-        if (customSheetScrollView){
-                customViewRect = customSheetScrollView.frame;
-                customViewRect.size.height = self.view.frame.size.height - startY;
-                customSheetScrollView.frame = customViewRect;
-                customView.frame = windowRect;
-
-            if (myParentProxy.fixedHeight == NO){
-                [myParentProxy.viewProxy reposition];
-                [myParentProxy.viewProxy layoutChildrenIfNeeded];
-            }
+        if (customSheetScrollView) {
+            customViewRect = customSheetScrollView.frame;
+        } else {
+            customViewRect = customView.frame;
         }
-        else {
-            if (myParentProxy.fixedHeight == NO){
-                customViewRect = customView.frame;
-                customViewRect.size.height = self.view.frame.size.height - startY;
-                customView.frame = customViewRect;
+        customViewRect.size.height = self.view.frame.size.height - startY;
 
-                [myParentProxy.viewProxy reposition];
-                [myParentProxy.viewProxy layoutChildrenIfNeeded];
-            }
+        if (myParentProxy.fixedHeight == NO) {
+            [myParentProxy.viewProxy reposition];
+            [myParentProxy.viewProxy layoutChildrenIfNeeded];
         }
-
     }];
     [myParentProxy fireEvent:@"open" withObject:nil];
 }
@@ -187,70 +167,53 @@
     
     if ([myParentProxy valueForKey:@"detents"]){
         userDetents = [myParentProxy valueForKey:@"detents"];
-        
-        if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
+
+        BOOL hasLarge = [TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES];
+        BOOL hasMedium = [TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES];
+        BOOL hasSmall = [TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES];
+
+        // Determine max/min positions based on available detents
+        if (hasLarge) {
             maxPosition = _fullViewYPosition;
             maxState = full;
-            if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && ![TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                mediumPosition = NO;
-                smallPosition = NO;
-
-                minPosition = _fullViewYPosition;
-                minState = full;
-                startDetent = @"large";
-            }
-            else {
-                if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && [TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    minPosition = _expandedViewYPosition;
-                    minState = expanded;
-                    smallPosition = NO;
-
-                    if (![startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"]){
-                        startDetent = @"medium";
-                    }
-                }
-                else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && ![TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    mediumPosition = NO;
-
-                    if ([startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"]){
-                        startDetent = @"small";
-                    }
-                }
-            }
         }
-        else if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
+        else if (hasMedium) {
             maxPosition = _expandedViewYPosition;
             maxState = expanded;
             fullPositon = NO;
-
-            if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
-                minPosition = _expandedViewYPosition;
-                minState = expanded;
-                smallPosition = NO;
-
-                if ([startDetent isEqual:@"small"] || [startDetent isEqual:@"large"]){
-                    startDetent = @"medium";
-                }
-            }
-            else {
-                if ([startDetent isEqual:@"large"]){
-                    startDetent = @"medium";
-                }
-            }
         }
-        else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
+        else if (hasSmall) {
             maxPosition = _partialViewYPosition;
             maxState = partial;
             mediumPosition = NO;
             fullPositon = NO;
+        }
 
-            if ([startDetent isEqual:@"medium"] || [startDetent isEqual:@"large"]){
-                startDetent = @"small";
+        if (!hasSmall) {
+            smallPosition = NO;
+            minPosition = _expandedViewYPosition;
+            minState = expanded;
+        }
+        if (!hasMedium) {
+            mediumPosition = NO;
+            if (hasLarge) {
+                minPosition = _fullViewYPosition;
+                minState = full;
             }
         }
-        else {
-            maxPosition = _fullViewYPosition;
-            maxState = full;
+
+        // Adjust startDetent to a valid detent
+        if (![startDetent isEqual:@"small"] && ![startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"] && hasSmall) {
+            startDetent = @"small";
+        }
+        if ([startDetent isEqual:@"small"] && !hasSmall) {
+            startDetent = hasMedium ? @"medium" : @"large";
+        }
+        if ([startDetent isEqual:@"medium"] && !hasMedium) {
+            startDetent = hasSmall ? @"small" : @"large";
+        }
+        if ([startDetent isEqual:@"large"] && !hasLarge) {
+            startDetent = hasMedium ? @"medium" : @"small";
         }
     }
     
@@ -278,66 +241,33 @@
     else {
         largestUndimmedDetent = @"small";
     }
-    
-   
-    if ([startDetent isEqual: @"small"]){
-        if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
-            self.lastStatus = partial;
-            
-            if (![largestUndimmedDetent isEqual: @"small"]){
-                backgroundViewHidden = NO;
-                viewBackgroundColor = dimmedViewBackgroundColor;
-            }
-        }
-        else {
-            self.lastStatus = expanded;
-            
-            if (![largestUndimmedDetent isEqual: @"medium"]){
-                backgroundViewHidden = NO;
-                viewBackgroundColor = dimmedViewBackgroundColor;
-            }
-        }
+
+    // Determine initial state from startDetent
+    NSString *currentUndimmed = nil;
+    if ([startDetent isEqual: @"small"]) {
+        self.lastStatus = partial;
+        currentUndimmed = @"small";
     }
-    else if ([startDetent isEqual: @"medium"]){
-        if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-            self.lastStatus = expanded;
-            if (![largestUndimmedDetent isEqual: @"medium"]){
-                backgroundViewHidden = NO;
-                viewBackgroundColor = dimmedViewBackgroundColor;
-            }
-        }
-        else {
-            self.lastStatus = full;
-            if (![largestUndimmedDetent isEqual: @"full"]){
-                backgroundViewHidden = NO;
-                viewBackgroundColor = dimmedViewBackgroundColor;
-            }
-        }
+    else if ([startDetent isEqual: @"medium"]) {
+        self.lastStatus = expanded;
+        currentUndimmed = @"medium";
     }
-    else if ([startDetent isEqual: @"large"]){
-        if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
-            self.lastStatus = full;
-            if (![largestUndimmedDetent isEqual: @"full"]){
-                backgroundViewHidden = NO;
-                viewBackgroundColor = dimmedViewBackgroundColor;
-            }
-        }
-        else {
-            self.lastStatus = expanded;
-            if (![largestUndimmedDetent isEqual: @"medium"]){
-                backgroundViewHidden = NO;
-                viewBackgroundColor = dimmedViewBackgroundColor;
-            }
-        }
+    else if ([startDetent isEqual: @"large"]) {
+        self.lastStatus = full;
+        currentUndimmed = @"full";
     }
     else {
         self.lastStatus = expanded;
-        if ([largestUndimmedDetent isEqual: @"small"]){
-            backgroundViewHidden = NO;
-            viewBackgroundColor = dimmedViewBackgroundColor;
-        }
+        currentUndimmed = nil;
     }
-    if ([myParentProxy backgroundView] != nil){
+
+    // Set background dimming if current state is larger than undimmed detent
+    if (currentUndimmed != nil && ![currentUndimmed isEqual: largestUndimmedDetent]) {
+        backgroundViewHidden = NO;
+        viewBackgroundColor = dimmedViewBackgroundColor;
+    }
+
+    if ([myParentProxy backgroundView] != nil) {
         [myParentProxy backgroundView].hidden = backgroundViewHidden;
     }
 }
@@ -347,70 +277,29 @@
 - (void)changeInsets:(UIView *)view
 {
     CGFloat bottomIntent = safeAreaInset.bottom;
-    CGFloat topInset;
-    CGFloat diffPos = (yPosition-(yPosition-maxPosition));
-    
     
     if (self.lastStatus == partial) {
-                bottomIntent = ((height)-130)+safeAreaInset.bottom;
-            }
+        bottomIntent = (height - 130) + safeAreaInset.bottom;
+    }
     else if (self.lastStatus == expanded) {
-                bottomIntent = ((height/2))+safeAreaInset.bottom;
+        bottomIntent = (height / 2) + safeAreaInset.bottom;
     }
     else {
-                bottomIntent = safeAreaInset.bottom + 100;
+        bottomIntent = safeAreaInset.bottom + 100;
     }
     
     if ([view respondsToSelector:@selector(setScrollEnabled:)]){
+        UIScrollView *scrollView = (UIScrollView *)view;
+        CGFloat topInset = scrollView.contentInset.top;
 
-            if ([view isKindOfClass:[UITableView class]]){
-                UITableView *thisTableView = (UITableView *)view;
-                topInset = thisTableView.contentInset.top;
-
-                scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent - 20, 0);
-                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
-                [thisTableView setContentInset:insets];
-                [thisTableView setScrollIndicatorInsets:scrollBarinsets];
-            }
-            else if ([view isKindOfClass:[UIScrollView class]]){
-                UIScrollView *thisTableView = (UIScrollView *)view;
-                topInset = thisTableView.contentInset.top;
-                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
-                scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
-                [thisTableView setContentInset:insets];
-                [thisTableView setScrollIndicatorInsets:scrollBarinsets];
-            }
-            else {
-            }
+        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
+        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+        [scrollView setContentInset:insets];
+        [scrollView setScrollIndicatorInsets:scrollBarinsets];
     }
-    else {
-        for (UIView *eachView in view.subviews) {
-
-            if ([eachView respondsToSelector:@selector(setScrollEnabled:)]){
-                    
-                    if ([eachView isKindOfClass:[UITableView class]]){
-                        UITableView *thisTableView = (UITableView *)eachView;
-                        topInset = thisTableView.contentInset.top;
-                        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent, 0);
-                        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
-
-                        [thisTableView setContentInset:insets];
-                        [thisTableView setScrollIndicatorInsets:scrollBarinsets];
-                    }
-                    else if ([eachView isKindOfClass:[UIScrollView class]]){
-                        UIScrollView *thisTableView = (UIScrollView *)eachView;
-                        topInset = thisTableView.contentInset.top;
-                        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
-                        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
-
-                        [thisTableView setContentInset:insets];
-                        [thisTableView setScrollIndicatorInsets:scrollBarinsets];
-                    }
-                    else {
-                    }
-            }
-            [self changeInsets:eachView];
-        }
+    
+    for (UIView *eachView in view.subviews) {
+        [self changeInsets:eachView];
     }
 }
 
