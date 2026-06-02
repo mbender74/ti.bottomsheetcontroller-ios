@@ -481,10 +481,6 @@
   RELEASE_TO_NIL(currentTiBottomSheet);
   //RELEASE_TO_NIL(bottomSheetclosingCondition);
   RELEASE_TO_NIL(centerProxy);
-  [self forgetSelf];
-  [self _destroy];
-  [self autorelease];
-  //[self release];
 }
 
 - (void)initAndShowSheetController
