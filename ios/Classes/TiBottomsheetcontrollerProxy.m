@@ -455,10 +455,8 @@
   customBottomSheet = nil;
   viewController = nil;
   closeButtonView = nil;
-  closeButtonProxy = nil;
   currentTiBottomSheet = nil;
  // bottomSheetclosingCondition = nil;
-  contentViewProxy = nil;
   centerProxy = nil;
   if (@available(iOS 15, *)) {
     [_detents release];
