@@ -32,6 +32,7 @@
     if (myParentProxy != args) {
         [myParentProxy release];
         myParentProxy = [args retain];
+        NSLog(@"[INFO] BottomSheetViewController: proxy set to %@", myParentProxy);
     }
 }
 
@@ -87,6 +88,7 @@
     }
 
     if (myParentProxy != nil) {
+        NSLog(@"[INFO] viewDidLoad: calling setupData with proxy %@", myParentProxy);
         [self setupData];
     }
     [self setupGestureEvent];
@@ -140,7 +142,10 @@
     viewBackgroundColor = [UIColor clearColor];
     dimmedViewBackgroundColor = [[TiUtils colorValue:@"#22000000"] _color];
     
-    if (myParentProxy == nil) return;
+    if (myParentProxy == nil) {
+        NSLog(@"[WARN] setupData called with nil myParentProxy");
+        return;
+    }
     
     if ([myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]){
         self.partialViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]];
