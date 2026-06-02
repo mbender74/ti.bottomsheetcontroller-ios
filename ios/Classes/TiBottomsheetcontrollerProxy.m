@@ -56,8 +56,7 @@
     currentTiBottomSheet = nil;
     nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
    // RELEASE_TO_NIL(bottomSheetclosingCondition);
-    RELEASE_TO_NIL(contentViewProxy);
-    #if !TARGET_OS_MACCATALYST
+      #if !TARGET_OS_MACCATALYST
     if (bottomSheet != nil) {
         bottomSheet.delegate = nil;
     }
@@ -158,8 +157,7 @@
   if (closeButtonProxy != nil) {
     //  NSLog(@"release closeButtonproxy ");
 
-      RELEASE_TO_NIL(closeButtonProxy);
-  }
+      }
 
    // NSLog(@"closeButton ");
 
@@ -201,8 +199,7 @@
 {
   ENSURE_SINGLE_ARG(value, TiViewProxy);
   if (contentViewProxy != nil) {
-    RELEASE_TO_NIL(contentViewProxy);
-  }
+    }
   contentViewProxy = [(TiViewProxy *)value retain];
   self.viewProxy = contentViewProxy;
   [self replaceValue:contentViewProxy forKey:@"contentView" notification:NO];
@@ -467,10 +464,8 @@
   RELEASE_TO_NIL(customBottomSheet);
   RELEASE_TO_NIL(viewController);
   RELEASE_TO_NIL(closeButtonView);
-  RELEASE_TO_NIL(closeButtonProxy);
   RELEASE_TO_NIL(currentTiBottomSheet);
   //RELEASE_TO_NIL(bottomSheetclosingCondition);
-  RELEASE_TO_NIL(contentViewProxy);
   RELEASE_TO_NIL(centerProxy);
   [self forgetSelf];
   [self _destroy];
