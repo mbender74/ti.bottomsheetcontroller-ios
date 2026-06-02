@@ -29,9 +29,17 @@
 
 -(void)setProxyOfBottomSheetController:(id)args
 {
-    myParentProxy = args;
+    if (myParentProxy != args) {
+        [myParentProxy release];
+        myParentProxy = [args retain];
+    }
 }
 
+- (void)dealloc
+{
+    [myParentProxy release];
+    [super dealloc];
+}
 
 
 #pragma mark -
