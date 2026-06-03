@@ -26,8 +26,8 @@ UISheetPresentationControllerDetentIdentifier UISheetPresentationControllerDeten
 + (instancetype)customDetentWithHeight:(CGFloat)height {
     if (@available(iOS 16.0, macCatalyst 16.0, *)) {
         return [UISheetPresentationControllerDetent customDetentWithIdentifier:UISheetPresentationControllerDetentIdentifierCustom(height)
-                                                                      resolver:^UISheetPresentationControllerDetentParameter(CGRect frame) {
-            return UISheetPresentationControllerDetentParameter(height:height, additionalHeight:CGRectZero);
+                                                                      resolver:^CGFloat(id<UISheetPresentationControllerDetentResolutionContext> context) {
+            return height;
         }];
     }
     // Fallback for iOS 15
@@ -38,8 +38,8 @@ UISheetPresentationControllerDetentIdentifier UISheetPresentationControllerDeten
 + (instancetype)customDetentWithKey:(NSString *)key height:(CGFloat)height {
     if (@available(iOS 16.0, macCatalyst 16.0, *)) {
         return [UISheetPresentationControllerDetent customDetentWithIdentifier:key
-                                                                      resolver:^UISheetPresentationControllerDetentParameter(CGRect frame) {
-            return UISheetPresentationControllerDetentParameter(height:height, additionalHeight:CGRectZero);
+                                                                      resolver:^CGFloat(id<UISheetPresentationControllerDetentResolutionContext> context) {
+            return height;
         }];
     }
     // Fallback for iOS 15 - uses height-based identifier (private API)
