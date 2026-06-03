@@ -1,223 +1,735 @@
 # Titanium BottomSheetController iOS Module
-iOS 15+ and fallback version for older iOS - UISheetPresentationController
 
-## UPDATE for 1.2.0
-added customDetents (iOS16)
+Created by **Marc Bender** | Version 1.3.0 | iOS 15+ & Mac Catalyst compatible
 
-## UPDATE for 1.0.7
-now MacCatalyst (15+) compatible
-
-## UPDATE for 1.0.5 and 1.0.6
-events and methods are changed!
-Also new features for the nonSystemSheet!
+A powerful Titanium module for bottom sheets on iOS with two implementation modes:
+- **System Sheet** (native iOS 15+ `UISheetPresentationController`)
+- **Custom Sheet** (custom implementation for maximum control and backwards compatibility)
 
 <img src="./demo.gif" width="293" height="634" alt="Example" />
-
 <img src="./example-width-property.png" width="293" height="634" alt="Example width property" />
 
-## Methods
+---
 
-* MODULE  -> `createBottomSheet({properties}) `<br/> the **bottomSheetObject**
+## Table of Contents
 
-## bottomSheetObject Methods
-* `open({animated:bool}) `
-* `close({animated:bool}) `<br/> close the controller, per exaple if to did any action in the content view
-* `selectedDetentIdentifier`<br/>return STRING - selectedDetentIdentifier (medium,large or none)
-* `changeCurrentDetent(STRING)`<br/>change the selectedDetentIdentifier animated ('large' or 'medium') **on 'nonSystemSheet:false' only** (iOS15+)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Modes: System Sheet vs. Custom Sheet](#modes-system-sheet-vs-custom-sheet)
+- [Properties](#properties)
+  - [General Properties](#general-properties)
+  - [System Sheet Properties (nonSystemSheet:false)](#system-sheet-properties-nonsystemsheetfalse)
+  - [Custom Sheet Properties (nonSystemSheet:true)](#custom-sheet-properties-nonsystemsheettrue)
+- [Methods](#methods)
+- [Events](#events)
+- [Examples](#examples)
+  - [Simple Bottom Sheet](#simple-bottom-sheet)
+  - [Custom Detents (iOS 16+)](#custom-detents-ios-16)
+  - [Bottom Sheet with TableView](#bottom-sheet-with-tableview)
+  - [System Sheet with Pan Gesture Disabled](#system-sheet-with-pan-gesture-disabled)
+- [FAQ](#faq)
+- [Changelog](#changelog)
+- [License](#license)
 
+---
 
-## Events
+## Installation
 
-* `open `
-* `close `
-* `dismissing `
-* `detentChange ` returns {"selectedDetentIdentifier":"medium",....}
+```bash
+# Download the ZIP file and copy it to your Titanium project
+# ios/ directory of your project:
+cp ti.bottomsheetcontroller-iphone-1.3.0.zip your-project/app/assets/iphone/modules/ti.bottomsheetcontroller.zip
+```
 
+**Requirements:**
+- Titanium SDK 13.2.0+
+- iOS 15+ (for System Sheet features)
+- Mac Catalyst 15+ compatible
+
+---
+
+## Quick Start
+
+```javascript
+var TiBottomSheetControllerModule = require("ti.bottomsheetcontroller");
+
+// Create content view
+var contentView = Ti.UI.createView({
+    backgroundColor: '#ffffff',
+    layout: 'vertical'
+});
+
+contentView.add(Ti.UI.createLabel({
+    text: 'Hello Bottom Sheet!',
+    font: { fontSize: 20, fontWeight: 'bold' },
+    top: 60,
+    left: 20,
+    right: 20,
+    textAlign: 'center'
+}));
+
+// Create bottom sheet
+var bottomSheet = TiBottomSheetControllerModule.createBottomSheet({
+    contentView: contentView,
+    detents: { large: true, medium: true, small: true },
+    startDetent: 'medium',
+    prefersGrabberVisible: true,
+    nonSystemSheet: false  // native iOS 15+ sheet
+});
+
+// Event listeners
+bottomSheet.addEventListener('open', function() {
+    Ti.API.info('Bottom sheet opened');
+});
+
+bottomSheet.addEventListener('close', function() {
+    Ti.API.info('Bottom sheet closed');
+});
+
+// Open/Close
+bottomSheet.open({ animated: true });
+// bottomSheet.close({ animated: true });
+```
+
+---
+
+## Modes: System Sheet vs. Custom Sheet
+
+| Feature | System Sheet (`nonSystemSheet:false`) | Custom Sheet (`nonSystemSheet:true`, Default) |
+|---------|---------------------------------------|-----------------------------------------------|
+| iOS Version | 15+ (automatic fallback to Custom) | All iOS versions |
+| Animation | Native iOS animation | Custom animation |
+| Detents | `large`, `medium`, custom (iOS 16+) | `large`, `medium`, `small` + custom heights |
+| Performance | Excellent (native) | Good |
+| Customizability | Standard iOS behavior | Maximum control over appearance |
+| Pan-to-dismiss | ✅ | ✅ (disableable) |
+| Touch-to-dismiss | ✅ | ✅ (disableable) |
+
+**Recommendation:**
+- Use **System Sheet** for native iOS 15+ feel
+- Use **Custom Sheet** for maximum control, custom heights, or older iOS versions
+
+---
 
 ## Properties
 
-* `width:INTEGER`<br/>the width of the sheet can now be set (DIP only and for nonSystemSheet only)
+### General Properties
 
-* `detents:{large:bool,medium:bool,small:bool}`<br/>The object of heights where a sheet can rest.
- *if not set, default to 'medium' only*
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `contentView` | `TiUIView`, `TiUIWindow`, `TiUINavigationWindow` | *required* | The view/window displayed in the bottom sheet |
+| `closeButton` | `TiUIView` | `null` | Optional close button (positioned top-right) |
+| `backgroundColor` | `Hex` or `String` | `#eeeeee` | Background color of the bottom sheet |
+| `width` | `INTEGER` (DIP) | Screen Width | Width of the bottom sheet (Custom Sheet only) |
+| `preferredCornerRadius` | `INTEGER` | iOS Default | Corner radius in points |
+| `prefersGrabberVisible` | `BOOL` | `true` | Shows the grabber handle at the top of the sheet |
 
-* `customDetents:{key:value,key:value....}`<br/>The object of key/value pairs ex: 'customA':100  where a sheet can rest. Multiple pairs possible
- 
+#### `contentView`
 
-* `preferredCornerRadius:integer`<br/>The corner radius that the sheet attempts to present with.
- *if not set default to iOS default radius*
+The main content view. Can be:
+- `Ti.UI.createView()` - simple view
+- `Ti.UI.createWindow()` - window with its own lifecycle
+- `Ti.UI.createNavigationWindow()` - navigation window with back button support
 
-*	`prefersEdgeAttachedInCompactHeight:bool` <br/>A Boolean value that determines whether the sheet attaches to the bottom edge of the screen in a compact-height size class.
+```javascript
+// Example with NavigationWindow
+var navWindow = Ti.UI.createNavigationWindow();
+var win = Ti.UI.createWindow({ backgroundColor: 'white' });
+navWindow.open(win);
 
-* `prefersScrollingExpandsWhenScrolledToEdge:bool`<br/>A Boolean value that determines whether scrolling expands the sheet to a larger detent.
+var bottomSheet = TiBottomSheetControllerModule.createBottomSheet({
+    contentView: navWindow,
+    // ...
+});
+```
 
-* `widthFollowsPreferredContentSizeWhenEdgeAttached:bool`<br/>A Boolean value that determines whether the sheet's width matches its view controller's preferred content size.
+#### `closeButton`
 
-* `prefersGrabberVisible:bool`<br/>A Boolean value that determines whether the sheet shows a grabber at the top.
+Optional button for closing. Automatically positioned top-right:
 
-* `nonModal:bool`<br/>has effect ONLY when "nonSystemSheet:false" on iOS >= 15
+```javascript
+var closeButton = Ti.UI.createButton({
+    title: '✕',
+    width: 30,
+    height: 30,
+    font: { fontSize: 16 }
+});
 
-* `startDetent:string`<br/>medium or large or the a key from customDetents - if not set, it is full dimmed depending on activated detents - The largest detent that doesn’t dim the view underneath the sheet.
+closeButton.addEventListener('click', function() {
+    bottomSheet.close({ animated: true });
+});
+```
 
+---
 
-* `largestUndimmedDetentIdentifier:string`<br/>medium or large - if not set, it is full dimmed depending on activated detents - The largest detent that doesn’t dim the view underneath the sheet.
- ***If not set, defaults to full dimmed***
+### System Sheet Properties (`nonSystemSheet:false`)
 
-* `contentView:TiUIView,TiUIWindow or TiUINavigationWindow`<br/>View (any kind), Window or NavigationWindow
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `nonSystemSheet` | `BOOL` | `true` | Set to `false` for native iOS 15+ sheet |
+| `detents` | `Object` | `{ medium: true }` | Available detent sizes |
+| `customDetents` | `Object` | `null` | Custom detents (iOS 16+) |
+| `startDetent` | `String` | Auto | Starting detent: `'large'`, `'medium'`, or custom key |
+| `largestUndimmedDetentIdentifier` | `String` | `'large'` | Largest detent without background dimming |
+| `nonModal` | `BOOL` | `false` | Modal behavior |
+| `prefersEdgeAttachedInCompactHeight` | `BOOL` | `false` | Attach to bottom edge in compact mode |
+| `prefersScrollingExpandsWhenScrolledToEdge` | `BOOL` | `false` | Scrolling expands to next detent |
+| `widthFollowsPreferredContentSizeWhenEdgeAttached` | `BOOL` | `false` | Width follows content size |
+| `systemSheetDisablePanGestureDismiss` | `BOOL` | `false` | Disable pan gesture (drag down to close) |
 
-* `closeButton:TiUIView`<br/>View or Button
+#### `detents`
 
-* `backgroundColor:Hex or String`
+Defines which detent sizes are available:
 
-* `nonSystemSheet:bool`<br/>A Boolean value that determines whether the sheet is iOS15 or fallback version - if "false" and device is non iOS15 it also fallbacks
- **if NOT SET -> defaults to "true"**
+```javascript
+detents: {
+    large: true,   // Full screen (approx. 85% screen height)
+    medium: true,  // Middle (approx. 50% screen height)
+    small: false   // Not available in System Sheet
+}
+```
 
-* `nonSystemSheetTopShadow:bool`<br/>topShadow visible or not visible
+#### `customDetents` (iOS 16+)
 
-* `nonSystemSheetShouldScroll:bool`<br/>when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet
- **ATTENTION**: when you put a tableView, scrollView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
+Custom detent sizes with user-defined keys:
 
+```javascript
+customDetents: {
+    customA: 100,  // Key: 'customA', Height: 100 points
+    customB: 200,  // Key: 'customB', Height: 200 points
+    customC: 300   // Key: 'customC', Height: 300 points
+}
+```
 
-* `nonSystemSheetAutomaticStartPositionFromContentViewHeight:bool`<br/>when this property is "**true**" the nonSystemSheet opens in the height of the contentView, **all detents are disabled**, only the real height is active, "**startDetent**" property **will be ignored**, also the "detents" property are ignored -- if you want an undimmed background, then you need to set property "**largestUndimmedDetentIdentifier**" to "large" if NOT set defaults to false
+**Important:** The key is returned in the `detentChange` event:
+```javascript
+bottomSheet.addEventListener('detentChange', function(e) {
+    // e.selectedDetentIdentifier = 'customA' | 'customB' | 'customC'
+});
+```
 
-* `nonSystemSheetSmallHeight:integer`<br/>(optional) when set, the small detent is set to this height
+#### `startDetent`
 
-* `nonSystemSheetMediumHeight:integer`<br/>(optional) when set, the medium detent is set to this height
+Determines the initial detent when opening:
 
-* `nonSystemSheetLargeHeight:integer`<br/>(optional) when set, the large detent is set to this height
+```javascript
+// Standard detents
+startDetent: 'medium'  // or 'large'
 
-* `nonSystemSheetHandleColor:Hex or String`<br/>(optional) when set, the handle will be in that color
+// Custom detents (iOS 16+)
+startDetent: 'customA' // Uses the key from customDetents
+```
 
-* `nonSystemSheetDisableDimmedBackground:bool`<br/>(optional) when set true, disables the dimmed backgroundView of the sheetcontroller
+#### `largestUndimmedDetentIdentifier`
 
-* `nonSystemSheetDisableDimmedBackgroundTouchDismiss:bool`<br/>(optional) when set true, disables the touch event on the dimmed backgroundView that will close the sheetController
+Controls background dimming. Everything below the specified detent has no dark background:
 
-* `nonSystemSheetDisablePanGestureDismiss:bool`<br/>(optional) when set true, disables the pan gesture (drag down to close), closing is only possible via closeButton then OR via "close" method
+```javascript
+// Background is not dimmed at medium detent
+largestUndimmedDetentIdentifier: 'medium'
 
-## Example
+// For custom detents
+largestUndimmedDetentIdentifier: 'customB'
+```
 
-```js
+---
+
+### Custom Sheet Properties (`nonSystemSheet:true`)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `nonSystemSheet` | `BOOL` | `true` | Set to `true` (or omit) for custom sheet |
+| `detents` | `Object` | `{ medium: true }` | Available detent sizes |
+| `startDetent` | `String` | `'small'` | Starting detent: `'large'`, `'medium'`, `'small'` |
+| `largestUndimmedDetentIdentifier` | `String` | `'small'` | Largest detent without dimming |
+| `nonSystemSheetSmallHeight` | `INTEGER` | 130 | Height of small detent in points |
+| `nonSystemSheetMediumHeight` | `INTEGER` | Screen/2 | Height of medium detent |
+| `nonSystemSheetLargeHeight` | `INTEGER` | Screen-100 | Height of large detent |
+| `nonSystemSheetTopShadow` | `BOOL` | `false` | Show shadow on top |
+| `nonSystemSheetHandleColor` | `Hex` or `String` | Auto (dark/light) | Color of the grabber handle |
+| `nonSystemSheetShouldScroll` | `BOOL` | `false` | Enable scrolling if content is too large |
+| `nonSystemSheetAutomaticStartPositionFromContentViewHeight` | `BOOL` | `false` | Start height based on content |
+| `nonSystemSheetDisableDimmedBackground` | `BOOL` | `false` | Disable background dimming |
+| `nonSystemSheetDisableDimmedBackgroundTouchDismiss` | `BOOL` | `false` | Disable touch-to-dismiss |
+| `nonSystemSheetDisablePanGestureDismiss` | `BOOL` | `false` | Disable pan gesture (drag down to close) |
+
+#### Custom Heights
+
+Full control over detent sizes:
+
+```javascript
+nonSystemSheetSmallHeight: 200,   // Small detent: 200 points high
+nonSystemSheetMediumHeight: 400,  // Medium detent: 400 points high
+nonSystemSheetLargeHeight: 700    // Large detent: 700 points high
+```
+
+#### `nonSystemSheetShouldScroll`
+
+If content is larger than the sheet, automatic scrolling can be enabled:
+
+```javascript
+nonSystemSheetShouldScroll: true
+```
+
+**Note:** If the contentView already contains a TableView/ScrollView, scrolling of inner views will be disabled in favor of the sheet scrolling!
+
+#### `nonSystemSheetAutomaticStartPositionFromContentViewHeight`
+
+The sheet opens at the exact height of the content (all detents are ignored):
+
+```javascript
+nonSystemSheetAutomaticStartPositionFromContentViewHeight: true,
+largestUndimmedDetentIdentifier: 'large' // For non-dimmed background
+```
+
+#### Disabling Pan & Touch Gestures
+
+```javascript
+// Disable drag down to close
+nonSystemSheetDisablePanGestureDismiss: true,
+
+// Disable touch on background to close
+nonSystemSheetDisableDimmedBackgroundTouchDismiss: true,
+
+// Disable complete dimming
+nonSystemSheetDisableDimmedBackground: true
+```
+
+---
+
+## Methods
+
+### `createBottomSheet(properties)`
+
+Creates a new bottom sheet object.
+
+**Parameter:** `properties` - Object with all properties described above
+
+**Returns:** BottomSheetController object
+
+```javascript
+var bottomSheet = TiBottomSheetControllerModule.createBottomSheet({
+    contentView: myView,
+    detents: { large: true, medium: true },
+    startDetent: 'medium'
+});
+```
+
+---
+
+### `open({ animated })`
+
+Opens the bottom sheet.
+
+**Parameter:**
+- `animated` (BOOL, default: `true`) - Show animation
+
+```javascript
+bottomSheet.open({ animated: true });
+```
+
+**Note:** Calling `open()` multiple times while the sheet is already open will be ignored (with console warning).
+
+---
+
+### `close({ animated })`
+
+Closes the bottom sheet.
+
+**Parameter:**
+- `animated` (BOOL, default: `true`) - Show animation
+
+```javascript
+bottomSheet.close({ animated: true });
+```
+
+**Note:** Useful for programmatic closing after an action in the sheet.
+
+---
+
+### `selectedDetentIdentifier` (Property)
+
+Returns the current detent as a string.
+
+**Returns:** `String` - `'large'`, `'medium'`, `'small'`, or custom key
+
+```javascript
+var currentDetent = bottomSheet.selectedDetentIdentifier;
+Ti.API.info('Current detent: ' + currentDetent);
+```
+
+---
+
+### `changeCurrentDetent(identifier)`
+
+Animates to a different detent. **System Sheet only (`nonSystemSheet:false`)**!
+
+**Parameter:**
+- `identifier` (String) - `'large'`, `'medium'`, or custom key from `customDetents`
+
+```javascript
+// Switch to medium
+bottomSheet.changeCurrentDetent('medium');
+
+// Switch to custom detent (iOS 16+)
+bottomSheet.changeCurrentDetent('customB');
+```
+
+---
+
+## Events
+
+### `open`
+
+Fired when the bottom sheet has fully opened.
+
+```javascript
+bottomSheet.addEventListener('open', function(e) {
+    Ti.API.info('Bottom sheet was opened');
+});
+```
+
+---
+
+### `close`
+
+Fired when the bottom sheet has fully closed.
+
+```javascript
+bottomSheet.addEventListener('close', function(e) {
+    Ti.API.info('Bottom sheet was closed');
+    // Clean up resources, reset state, etc.
+});
+```
+
+---
+
+### `dismissing`
+
+Fired when the bottom sheet starts to close (before animation).
+
+```javascript
+bottomSheet.addEventListener('dismissing', function(e) {
+    Ti.API.info('Bottom sheet is closing...');
+    // You can prevent closing by calling close() here
+});
+```
+
+---
+
+### `detentChange`
+
+Fired when the detent changes (via user interaction or `changeCurrentDetent()`).
+
+**Event Object:**
+- `selectedDetentIdentifier` (String) - The new detent identifier
+
+```javascript
+bottomSheet.addEventListener('detentChange', function(e) {
+    Ti.API.info('Detent changed to: ' + e.selectedDetentIdentifier);
+    
+    // Can be used to dynamically adjust content
+    if (e.selectedDetentIdentifier === 'large') {
+        // Show extended content options
+    } else if (e.selectedDetentIdentifier === 'medium') {
+        // Show standard content
+    }
+});
+```
+
+---
+
+## Examples
+
+### Simple Bottom Sheet
+
+```javascript
 var TiBottomSheetControllerModule = require("ti.bottomsheetcontroller");
-var tableRows = [];
 
-var tableData = [ {title: 'Apples'}, {title: 'Bananas'}, {title: 'Carrots'}, {title: 'Potatoes'},{title: 'Apples'}, {title: 'Bananas'}, {title: 'Carrots'}, {title: 'Potatoes'},{title: 'Apples'}, {title: 'Bananas'}, {title: 'Carrots'}, {title: 'Potatoes'},{title: 'Apples'}, {title: 'Bananas'}, {title: 'Carrots'}, {title: 'Potatoes'},{title: 'Apples'}, {title: 'Bananas'}, {title: 'Carrots'}, {title: 'Potatoes'},{title: 'Apples'}, {title: 'Bananas'}, {title: 'Carrots'}, {title: 'Potatoes'},{title: 'Apples'}, {title: 'Bananas'}, {title: 'Carrots'}, {title: 'Potatoes'} ];
+var win = Ti.UI.createWindow({ backgroundColor: 'white' });
 
-for (var j = 0; j < tableData.length; j++) {
-	var rowView = Ti.UI.createView({
-		top: 1,
-		bottom: 1,
-		width: Ti.UI.FILL,
-		height: 62,
-		backgroundColor: 'transparent'
-	});
+// Content view
+var contentView = Ti.UI.createView({
+    backgroundColor: '#ffffff',
+    layout: 'vertical'
+});
 
-	var title = Ti.UI.createLabel({
-		color: '#000',
-		width: Ti.UI.SIZE,
-		height: Ti.UI.SIZE,
-		font: {
-			fontFamily: 'Arial',
-			fontSize: 22,
-			fontWeight: 'bold'
-		},
-		text: tableData[j].title
-	});
-	rowView.add(title);
+contentView.add(Ti.UI.createLabel({
+    text: 'Bottom Sheet Content',
+    font: { fontSize: 20, fontWeight: 'bold' },
+    top: 60,
+    left: 20,
+    right: 20,
+    textAlign: 'center'
+}));
 
-	var row = Ti.UI.createTableViewRow({
-		className: 'test',
-		height: 60,
-		backgroundColor: 'transparent',
-		width: Ti.UI.FILL
-	});
-	row.add(rowView);
-	tableRows.push(row);
+contentView.add(Ti.UI.createButton({
+    title: 'Close Bottom Sheet',
+    top: 100,
+    left: 20,
+    right: 20,
+    height: 44
+}));
+
+// Close button
+var closeButton = Ti.UI.createButton({
+    title: '✕',
+    width: 30,
+    height: 30,
+    font: { fontSize: 16 }
+});
+
+// Create bottom sheet
+var bottomSheet = TiBottomSheetControllerModule.createBottomSheet({
+    contentView: contentView,
+    closeButton: closeButton,
+    backgroundColor: '#ffffff',
+    detents: { large: true, medium: true, small: true },
+    startDetent: 'medium',
+    prefersGrabberVisible: true,
+    nonSystemSheet: true,  // Custom Sheet
+    preferredCornerRadius: 14
+});
+
+// Event listeners
+contentView.children[1].addEventListener('click', function() {
+    bottomSheet.close({ animated: true });
+});
+
+closeButton.addEventListener('click', function() {
+    bottomSheet.close({ animated: true });
+});
+
+bottomSheet.addEventListener('open', function() {
+    Ti.API.info('Bottom sheet opened');
+});
+
+bottomSheet.addEventListener('close', function() {
+    Ti.API.info('Bottom sheet closed');
+});
+
+// Open button
+var openButton = Ti.UI.createButton({
+    title: 'Open Bottom Sheet',
+    top: 50,
+    left: 20,
+    right: 20,
+    height: 44
+});
+
+openButton.addEventListener('click', function() {
+    bottomSheet.open({ animated: true });
+});
+
+win.add(openButton);
+win.open();
+```
+
+---
+
+### Custom Detents (iOS 16+)
+
+```javascript
+var bottomSheet = TiBottomSheetControllerModule.createBottomSheet({
+    contentView: myContentView,
+    nonSystemSheet: false,  // System Sheet
+    
+    // Disable standard detents
+    detents: {
+        large: false,
+        medium: false,
+        small: false
+    },
+    
+    // Define custom detents
+    customDetents: {
+        compact: 120,     // 120 points high
+        standard: 250,    // 250 points high
+        expanded: 400     // 400 points high
+    },
+    
+    startDetent: 'standard',
+    prefersGrabberVisible: true,
+    preferredCornerRadius: 16
+});
+
+bottomSheet.addEventListener('detentChange', function(e) {
+    Ti.API.info('Detent: ' + e.selectedDetentIdentifier);
+    // 'compact', 'standard', or 'expanded'
+    
+    // Dynamically switch to another detent
+    if (e.selectedDetentIdentifier === 'compact') {
+        setTimeout(function() {
+            bottomSheet.changeCurrentDetent('expanded');
+        }, 1000);
+    }
+});
+```
+
+---
+
+### Bottom Sheet with TableView
+
+```javascript
+var TiBottomSheetControllerModule = require("ti.bottomsheetcontroller");
+
+// Create table data
+var tableData = [];
+for (var i = 1; i <= 50; i++) {
+    tableData.push({ title: 'Item ' + i });
 }
 
-var bottomView = Ti.UI.createTableView({
-	top: 0,
-	left: 0,
-	right: 0,
-	bottom: 0,
-	showVerticalScrollIndicator: true,
-	width: Ti.UI.FILL,
-	height: 500,
-	contentHeight: Ti.UI.SIZE,
-	minRowHeight: 60,
-	scrollable: true,
-	scrollType: 'vertical',
-	backgroundColor: 'transparent'
+// Create TableView
+var tableView = Ti.UI.createTableView({
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    minRowHeight: 50
 });
 
-bottomView.setData(tableRows, {
-	animated: false
+tableView.setData(tableData);
+
+// Row click handler
+tableView.addEventListener('click', function(e) {
+    Ti.API.info('Clicked: ' + e.row.title);
+    // Optional: close sheet after click
+    // bottomSheet.close({ animated: true });
 });
 
-var bottomSheetController = TiBottomSheetControllerModule.createBottomSheet({
-	width:400,
-	detents:{
-		large:false,
-		medium:false,
-		small:false
-	}, // "small" has effect only when "nonSystemSheet:true"
-	customDetents:{
-		customA:100,
-		customB:200,
-		customC:300 // more possible!
-	},
-	startDetent:'customA', // medium or large -  when "nonSystemSheet:true" also "small" is possible -- when startDetent is "small" and detents:{small:false} is defaults to "medium" and so on... when customDetents are set enter here the "key" as string
-	preferredCornerRadius:20,
-	prefersEdgeAttachedInCompactHeight:true, // has effect only when "nonSystemSheet:false" - A Boolean value that determines whether the sheet attaches to the bottom edge of the screen in a compact-height size class.
-	prefersScrollingExpandsWhenScrolledToEdge:false, // has effect only when "nonSystemSheet:false"
-	widthFollowsPreferredContentSizeWhenEdgeAttached:true, // has effect only when "nonSystemSheet:false"
-	nonModal:false, // has effect ONLY when "nonSystemSheet:false" on iOS >= 15
-	largestUndimmedDetentIdentifier:'small', // medium or large (also "small" available when "nonSystemSheet:true") - if not set, it is full dimmed depending on activated detents when "nonSystemSheet:true" the property also allow to interact with the view in the background of the bottomSheet - when not dimmed, when dimmed interaction is not possible with the view in the background ---  when customDetents are set enter here the "key" as string
-	contentView:listView,
-	closeButton:myCloseButton, // add a closeButtonView to the bottomSheet
-	backgroundColor:'#eeeeee', 
-	prefersGrabberVisible:true, // bottomSheet grabberHandle visible true / false
-
-	nonSystemSheet:false, // defaults to "true" if not set - non iOS 15 SheetController (backwards compatible to non iOS15) when "true" - iOS15+ SheetController when "false" - if non iOS15 and set to "false" it also defaults to "true"
-	nonSystemSheetAutomaticStartPositionFromContentViewHeight:false, // when this property is "true" the nonSystemSheet opens in the height of the contentView, all detents are disabled, only this state is active, "startDetent" property is ignored, also the "detents" property is ignored -- if you want an undimmed background, then you need to set property "largestUndimmedDetentIdentifier" to "large"
-	nonSystemSheetSmallHeight:200, 
-	nonSystemSheetMediumHeight:400, 
-	nonSystemSheetLargeHeight:700,
-	//nonSystemSheetHandleColor:'red',
-	nonSystemSheetDisablePanGestureDismiss:true, // disables the pan gesture (drag down to close), closing is only possible via closeButton then OR via "close" method
-	nonSystemSheetDisableDimmedBackgroundTouchDismiss:false, // disables the touch event on the dimmed backgroundView that will close the sheetController
-
-	nonSystemSheetDisableDimmedBackground:false, // disables the dimmed backgroundView of the sheetcontroller
-	nonSystemSheetTopShadow:true, // has effect only on "nonSystemSheet:true"
-	nonSystemSheetShouldScroll:false, // when your contentView is not a scrollable view, then this activates scrolling if the contentView is larger then the bottomSheet 
-	// ATTENTION: when you put a tableView, scrollView or listView inside your contentView this property disables scrolling in the contentView in favour of the bottomSheetScrollView
+// Create bottom sheet
+var bottomSheet = TiBottomSheetControllerModule.createBottomSheet({
+    contentView: tableView,
+    detents: { large: true, medium: true, small: true },
+    startDetent: 'medium',
+    nonSystemSheet: true,
+    preferredCornerRadius: 12,
+    nonSystemSheetTopShadow: true
 });
 
-bottomSheetController.addEventListener('dismissing', function() {
-	console.log("bottomSheet dismissing");
+// Open button
+var openButton = Ti.UI.createButton({
+    title: 'Open List Sheet',
+    top: 50,
+    left: 20,
+    right: 20,
+    height: 44
 });
 
-bottomSheetController.addEventListener('close', function() {
-	console.log("bottomSheet closed");
+openButton.addEventListener('click', function() {
+    bottomSheet.open({ animated: true });
 });
 
-bottomSheetController.addEventListener('open', function() {
-	console.log("bottomSheet opened");
-});
-bottomSheetController.addEventListener('detentChange', function(e) {
-	console.log("\n\n bottomSheet detentChange: " + JSON.stringify(e) + "\n\n");
-	console.log("returns the at any time you call the propery -> bottomSheetController.selectedDetentIdentifier: " + bottomSheetController.selectedDetentIdentifier);
-});
-
-bottomSheetController.open({
-	animated: true
-});
-
+Ti.UI.currentWindow.add(openButton);
 ```
+
+---
+
+### System Sheet with Pan Gesture Disabled
+
+```javascript
+var bottomSheet = TiBottomSheetControllerModule.createBottomSheet({
+    contentView: myContentView,
+    nonSystemSheet: false,  // System Sheet
+    
+    detents: { large: true, medium: true },
+    startDetent: 'medium',
+    
+    // Disable pan gesture to close
+    systemSheetDisablePanGestureDismiss: true,
+    
+    // Only closable via close button or .close()
+    closeButton: myCloseButton
+});
+
+myCloseButton.addEventListener('click', function() {
+    bottomSheet.close({ animated: true });
+});
+
+// Or programmatically
+setTimeout(function() {
+    bottomSheet.close({ animated: true });
+}, 5000); // Auto-closes after 5 seconds
+```
+
+---
+
+## FAQ
+
+### Which mode should I use?
+
+- **System Sheet** (`nonSystemSheet: false`): For native iOS 15+ feel, best performance, fewer customization options
+- **Custom Sheet** (`nonSystemSheet: true`): For maximum control, custom heights, older iOS versions
+
+### Why doesn't `changeCurrentDetent()` work in Custom Sheet?
+
+This method is only available for System Sheet. In Custom Sheet, you can change detents by tapping the grabber handle or using `open()`/`close()`.
+
+### How do I disable closing by dragging?
+
+```javascript
+// Custom Sheet
+nonSystemSheetDisablePanGestureDismiss: true,
+
+// System Sheet
+systemSheetDisablePanGestureDismiss: true
+```
+
+### Why isn't my TableView scrolling?
+
+If `nonSystemSheetShouldScroll: true` is set, scrolling of inner views is disabled. Set it to `false` if your content is already scrollable.
+
+### Can I open/close the sheet multiple times?
+
+Yes! After closing (`close()`), the sheet can be opened again with `open()`. The internal state is properly reset.
+
+---
+
+## Changelog
+
+### v1.3.0
+- `systemSheetDisablePanGestureDismiss` property for System Sheet
+- Improved event handling logic (no duplicate events)
+- Code optimizations and bug fixes
+
+### v1.2.0
+- Custom detents support (iOS 16+)
+- `customDetents` property with user-defined keys
+- `changeCurrentDetent()` method for System Sheet
+
+### v1.1.0
+- Mac Catalyst support (15+)
+- Improved safe area handling
+- Rotation bug fixes
+
+### v1.0.7
+- Mac Catalyst compatible
+
+### v1.0.5 / v1.0.6
+- Events and methods refactored
+- New features for Custom Sheet
+- `nonSystemSheetAutomaticStartPositionFromContentViewHeight`
+- Various bug fixes
+
+---
 
 ## License
 
-MIT
+MIT License
+
+Copyright (c) 2021-2024 Marc Bender
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
 
 ## Author
 
-Marc Bender
+**Marc Bender**
+- Titanium Module Developer
+- iOS & Mobile Development

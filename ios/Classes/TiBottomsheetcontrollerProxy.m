@@ -11,6 +11,25 @@
 #define USE_TI_UINAVIGATIONWINDOW
 
 #import "TiBottomsheetcontrollerProxy.h"
+
+// Animation constants
+static const CGFloat kCloseAnimationDuration = 0.25;
+static const CGFloat kDetentTransitionDuration = 0.3;
+static const CGFloat kHandleFadeDuration = 0.15;
+static const CGFloat kDispatchDelay = 0.1;
+
+// Layout constants
+static const CGFloat kDefaultCornerRadius = 10.0;
+static const CGFloat kHandleContainerWidth = 60.0;
+static const CGFloat kHandleContainerHeight = 20.0;
+static const CGFloat kHandleWidth = 36.0;
+static const CGFloat kHandleHeight = 5.0;
+static const CGFloat kHandleCornerRadius = 4.0;
+static const CGFloat kCloseButtonTopOffset = 24.0;
+static const CGFloat kScrollIndicatorInset = 20.0;
+
+// Height calculation constants
+static const CGFloat kMaxScreenHeightReduction = 200.0;
 #import <TitaniumKit/TiApp.h>
 #import <TitaniumKit/TiUtils.h>
 #import <TitaniumKit/TiWindowProxy.h>
@@ -24,60 +43,16 @@
 
 
 //- (id)_initWithPageContext:(id<TiEvaluator>)context args:(id)args
-//{
-//    if (self = [super _initWithPageContext:context]) {
-//        bottomSheetclosingCondition = [[NSCondition alloc] init];
-//        poWidth = TiDimensionUndefined;
-//        poHeight = TiDimensionUndefined;
-//        poBWidth = TiDimensionUndefined;
-//        poBHeight = TiDimensionUndefined;
-//        nonSystemSheetShouldScroll = NO;
-//        defaultsToNonSystemSheet = YES;
-//        nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
-//        useNavController = NO;
-//        bottomSheetInitialized = NO;
-//        contentViewScrollingDisabled = NO;
-//        UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
-//        bottomSheetSafeAreaInset = [[topContainerController hostingView] safeAreaInsets];
-//    }
-//    
-//    return self;
-//}
-
-
-
-- (id)init
-{
-    if (self = [super init]) {
-       // bottomSheetclosingCondition = [[NSCondition alloc] init];
-        poWidth = TiDimensionUndefined;
-        poHeight = TiDimensionUndefined;
-        poBWidth = TiDimensionUndefined;
-        poBHeight = TiDimensionUndefined;
-        customBottomSheet = nil;
-        currentTiBottomSheet = nil;
-        nonSystemSheetShouldScroll = NO;
-        defaultsToNonSystemSheet = YES;
-        nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
-        useNavController = NO;
-        bottomSheetInitialized = NO;
-        contentViewScrollingDisabled = NO;
-        UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
-        bottomSheetSafeAreaInset = [[topContainerController hostingView] safeAreaInsets];
-    }
-
-    return self;
-}
 
 - (void)dealloc
 {
-    //[[NSNotificationCenter defaultCenter] removeObserver:self];
-    [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
+    if (viewController != nil && viewController.view != nil) {
+        [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
+    }
     RELEASE_TO_NIL(viewController);
     bottomSheetInitialized = NO;
     currentTiBottomSheet = nil;
     nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
-   // RELEASE_TO_NIL(bottomSheetclosingCondition);
     RELEASE_TO_NIL(contentViewProxy);
     #if !TARGET_OS_MACCATALYST
     bottomSheet.delegate = nil;
@@ -286,6 +261,7 @@
     
   if (bottomSheetInitialized == NO) {
       eventFired = NO;
+      dismissingEventFired = NO;
       bottomSheetInitialized = YES;
 
       if (contentViewProxy == nil) {
@@ -351,7 +327,7 @@
 
                   UIColor *viewBackgroundColor = [UIColor clearColor];
                                 
-                  [UIView animateWithDuration:0.25
+                  [UIView animateWithDuration:kCloseAnimationDuration
                         delay:0.0
                         options:UIViewAnimationOptionCurveEaseIn
                         animations:^{
@@ -419,12 +395,7 @@
 
 - (UIView *)backgroundView
 {
-    if (backgroundView != nil){
-        return backgroundView;
-    }
-    else {
-        return nil;
-    }
+    return backgroundView;
 }
 
 - (UIView *)contentViewOfSheet
@@ -480,6 +451,7 @@
   isDismissing = NO;
   bottomSheetInitialized = NO;
   eventFired = NO;
+  dismissingEventFired = NO;
   bottomSheet.delegate = nil;
   addScrollInsetTop = NO;
   additionalBottomInset = 0;
@@ -545,7 +517,7 @@
       closeButtonView = [[UIView alloc] initWithFrame:closeButtonViewFrame];
    }
       
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kDispatchDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         if ([[[contentViewProxy class] description] isEqualToString:@"TiUINavigationWindowProxy"]) {
             TiWindowProxy *childWindowProxy = [contentViewProxy valueForKey:@"window"];
             
@@ -680,9 +652,9 @@
 
       realContentHeight = [self updateContentSizeWithReturn].height;
       
-      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kDispatchDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
               if (realContentHeight >= [UIScreen mainScreen].bounds.size.height){
-                  realContentHeight = realContentHeight - 200;
+                  realContentHeight = realContentHeight - kMaxScreenHeightReduction;
               }
               
               if (scrollableContentHeight == 0){
@@ -929,10 +901,29 @@
         customBottomSheet = [BottomSheetViewController new];
         [customBottomSheet setProxyOfBottomSheetController:self];
         
-        CGFloat y = [[[TiApp app] controller] topPresentedController].view.frame.origin.y;
-        CGFloat height = [[[TiApp app] controller] topPresentedController].view.frame.size.height;
-        CGFloat width = [[[TiApp app] controller] topPresentedController].view.frame.size.width;
-        CGFloat controllerWidth = [[[TiApp app] controller] topPresentedController].view.frame.size.width;
+        // Use windowHoldingController for correct view hierarchy (SDK pattern from TiUITableView/TiUIListView)
+        UIViewController *presentingController;
+        if ([contentViewProxy isKindOfClass:[TiWindowProxy class]]) {
+            presentingController = [(TiWindowProxy *)contentViewProxy windowHoldingController];
+        }
+        else {
+            // Walk up parent chain to find a window proxy
+            id parentProxy = [contentViewProxy parent];
+            while (parentProxy != nil && ![parentProxy isKindOfClass:[TiWindowProxy class]]) {
+                parentProxy = [parentProxy parent];
+            }
+            if (parentProxy != nil) {
+                presentingController = [(TiWindowProxy *)parentProxy windowHoldingController];
+            }
+            else {
+                presentingController = [[[TiApp app] controller] topPresentedController];
+            }
+        }
+        
+        CGFloat y = presentingController.view.frame.origin.y;
+        CGFloat height = presentingController.view.frame.size.height;
+        CGFloat width = presentingController.view.frame.size.width;
+        CGFloat controllerWidth = presentingController.view.frame.size.width;
 
         CGFloat left = 0;
         CGFloat right = 0;
@@ -1066,7 +1057,7 @@
             myScrollView.showsHorizontalScrollIndicator = NO;
             myScrollView.canCancelContentTouches = YES;
             myScrollView.contentInset = UIEdgeInsetsMake(0, 0, bottomSheetSafeAreaInset.bottom, 0);
-            [myScrollView setScrollIndicatorInsets:UIEdgeInsetsMake(20, 0, bottomSheetSafeAreaInset.bottom, 0)];
+            [myScrollView setScrollIndicatorInsets:UIEdgeInsetsMake(kScrollIndicatorInset, 0, bottomSheetSafeAreaInset.bottom, 0)];
             //scrollView.insetsLayoutMarginsFromSafeArea = YES;
             [containerView addSubview:myScrollView];
             [myScrollView addSubview:contentViewOfSheet];
@@ -1118,7 +1109,7 @@
             containerView.layer.cornerRadius = [TiUtils floatValue:[self valueForKey:@"preferredCornerRadius"]];
         }
         else {
-            containerView.layer.cornerRadius = 10;
+            containerView.layer.cornerRadius = kDefaultCornerRadius;
         }
         
         containerView.backgroundColor =  [[TiUtils colorValue:[self valueForKey:@"backgroundColor"]] _color];
@@ -1134,13 +1125,13 @@
        
         if ([TiUtils boolValue:[self valueForKey:@"prefersGrabberVisible"] def:YES]){
                         
-            CGRect handleContainerViewFrame = CGRectMake( 0, 0, 60, 20);
+            CGRect handleContainerViewFrame = CGRectMake( 0, 0, kHandleContainerWidth, kHandleContainerHeight);
             UIView *handleViewContainer = [[UIView alloc] initWithFrame:handleContainerViewFrame];
             [handleContainer addSubview:handleViewContainer];
             [handleViewContainer setCenter:CGPointMake(containerView.frame.size.width/2, 10)];
             
             
-            CGRect handleViewFrame = CGRectMake( 0, 0, 36, 5);
+            CGRect handleViewFrame = CGRectMake( 0, 0, kHandleWidth, kHandleHeight);
             handle = [[UIView alloc] initWithFrame:handleViewFrame];
             
             if ([self valueForUndefinedKey:@"nonSystemSheetHandleColor"]){
@@ -1149,7 +1140,7 @@
             else {
                 handle.backgroundColor = [self adaptiveGrabberColor];
             }
-            handle.layer.cornerRadius = 4;
+            handle.layer.cornerRadius = kHandleCornerRadius;
             [handle setCenter:CGPointMake(handleViewContainer.frame.size.width/2, 10)];
            
             [handleViewContainer addSubview:handle];
@@ -1173,11 +1164,11 @@
        }
         
         if (backgroundView != nil){
-            [[[[TiApp app] controller] topPresentedController].view addSubview:backgroundView];
-            [[[[TiApp app] controller] topPresentedController].view insertSubview:customBottomSheet.view aboveSubview:backgroundView];
+            [presentingController.view addSubview:backgroundView];
+            [presentingController.view insertSubview:customBottomSheet.view aboveSubview:backgroundView];
         }
         else {
-            [[[[TiApp app] controller] topPresentedController].view addSubview:customBottomSheet.view];
+            [presentingController.view addSubview:customBottomSheet.view];
         }
     }
     
@@ -1272,94 +1263,58 @@
 
 
 
+- (void)transitionToDetent:(State)newStatus withName:(NSString *)detentName
+{
+    customBottomSheet.lastStatus = newStatus;
+    
+    [UIView animateWithDuration:kDetentTransitionDuration delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        [customBottomSheet moveView:newStatus fromEvent:YES];
+    } completion:nil];
+    
+    [self sendEvent:detentName];
+}
+
 - (void)handleSingleHandleTap:(UITapGestureRecognizer *)recognizer
 {
     NSDictionary *userDetents = [self valueForKey:@"detents"];
 
-    [UIView animateWithDuration:0.15 animations:^{
+    [UIView animateWithDuration:kHandleFadeDuration animations:^{
         [handle setAlpha:0.3f];
     } completion:^(BOOL finished) {
-            if (customBottomSheet.lastStatus == 0){
-                if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    customBottomSheet.lastStatus = 1;
-
-                    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:1 fromEvent:YES];
-                    } completion:^(BOOL finished) {
-                    }];
-                    [self sendEvent:@"medium"];
-
-                }
-                else if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
-                    customBottomSheet.lastStatus = 2;
-
-                    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:2 fromEvent:YES];
-                    } completion:^(BOOL finished) {
-
-                    }];
-                    [self sendEvent:@"large"];
-
-                }
-                else {
-                    
-                    
-                    
+            State nextStatus = customBottomSheet.lastStatus;
+            NSString *detentName = nil;
+            
+            // Determine next detent based on current status and available detents
+            if (customBottomSheet.lastStatus == 0) {
+                // partial -> try medium, then large
+                if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]) {
+                    nextStatus = 1; detentName = @"medium";
+                } else if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]) {
+                    nextStatus = 2; detentName = @"large";
                 }
             }
-
-            else if (customBottomSheet.lastStatus == 1){
-                if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
-                    customBottomSheet.lastStatus = 2;
-
-                    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:2 fromEvent:YES];
-                    } completion:^(BOOL finished) {
-                    }];
-                    [self sendEvent:@"large"];
-
-                }
-                else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
-                    customBottomSheet.lastStatus = 0;
-
-                    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:0 fromEvent:YES];
-                    } completion:^(BOOL finished) {
-                    }];
-                    [self sendEvent:@"small"];
-
-                }
-                else {
-
+            else if (customBottomSheet.lastStatus == 1) {
+                // expanded -> try large, then small
+                if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]) {
+                    nextStatus = 2; detentName = @"large";
+                } else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]) {
+                    nextStatus = 0; detentName = @"small";
                 }
             }
-
-            else if (customBottomSheet.lastStatus == 2){
-                if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
-                    customBottomSheet.lastStatus = 0;
-
-                    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:0 fromEvent:YES];
-                    } completion:^(BOOL finished) {
-                    }];
-                    [self sendEvent:@"small"];
-
-                }
-                else if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    customBottomSheet.lastStatus = 1;
-
-                    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-                        [customBottomSheet moveView:1 fromEvent:YES];
-                    } completion:^(BOOL finished) {
-                    }];
-                    [self sendEvent:@"medium"];
-
-                }
-                else {
-                    
+            else if (customBottomSheet.lastStatus == 2) {
+                // full -> try small, then medium
+                if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]) {
+                    nextStatus = 0; detentName = @"small";
+                } else if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]) {
+                    nextStatus = 1; detentName = @"medium";
                 }
             }
-            [UIView animateWithDuration:0.15 animations:^{
+            
+            if (detentName != nil) {
+                [self transitionToDetent:nextStatus withName:detentName];
+            }
+            
+            [UIView animateWithDuration:kHandleFadeDuration animations:^{
                 [handle setAlpha:1.0f];
             } completion:nil];
     }];
@@ -1474,7 +1429,14 @@
   if ([[self viewController] presentedViewController] != nil) {
     return NO;
   }
-  [self fireEvent:@"dismissing" withObject:nil];
+  // Check if pan gesture dismissal is disabled
+  if ([TiUtils boolValue:[self valueForKey:@"systemSheetDisablePanGestureDismiss"] def:NO]) {
+    return NO;
+  }
+  if (dismissingEventFired == NO) {
+      dismissingEventFired = YES;
+      [self fireEvent:@"dismissing" withObject:nil];
+  }
   return YES;
 }
 

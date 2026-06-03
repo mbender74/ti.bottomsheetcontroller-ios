@@ -41,7 +41,7 @@ bool panFromScrollView;
 CGFloat width;
 CGFloat height;
 CGRect customViewRect;
-bool fullPositon;
+bool fullPosition;
 bool mediumPosition;
 bool smallPosition;
 CGFloat lastScrollViewOffsetY;

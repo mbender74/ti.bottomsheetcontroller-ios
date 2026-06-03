@@ -37,6 +37,7 @@
   BOOL nonSystemSheetShouldScroll;
   BOOL nonSystemSheetAutomaticStartPositionFromContentViewHeight;
   BOOL eventFired;
+  BOOL dismissingEventFired;
   BOOL addScrollInsetTop;
   BOOL useNavController;
   BOOL defaultsToNonSystemSheet;

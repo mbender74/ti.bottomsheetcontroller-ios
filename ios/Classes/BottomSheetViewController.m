@@ -13,9 +13,11 @@
 static const CGFloat kDefaultPartialHeight = 130.0;
 static const CGFloat kDefaultFullYPosition = 100.0;
 static const CGFloat kAnimationDuration = 0.35;
+static const CGFloat kDetentTransitionDuration = 0.3;
 static const CGFloat kSpringDamping = 1.0;
 static const CGFloat kInitialSpringVelocity = 1.0;
 static const NSString *kDefaultStartDetent = @"small";
+static const CGFloat kScrollIndicatorInsetAdjustment = 20.0;
 
 
 @interface BottomSheetViewController (){
@@ -33,18 +35,10 @@ static const NSString *kDefaultStartDetent = @"small";
 
 -(id)proxyOfBottomSheetController
 {
-    if (myParentProxy != nil){
-        return myParentProxy;
-    }
-    else {
-        return nil;
-    }
+    return myParentProxy;
 }
 -(void)setProxyOfBottomSheetController:(id)args
 {
-    if (myParentProxy != nil){
-        myParentProxy = nil;
-    }
     myParentProxy = args;
 }
 
@@ -66,7 +60,7 @@ static const NSString *kDefaultStartDetent = @"small";
     width = 0;
     height = 0;
     customViewRect;
-    fullPositon = YES;
+    fullPosition = YES;
     mediumPosition = YES;
     smallPosition = YES;
     lastScrollViewOffsetY = 0;
@@ -226,7 +220,7 @@ static const NSString *kDefaultStartDetent = @"small";
         else if (hasMedium) {
             maxPosition = _expandedViewYPosition;
             maxState = expanded;
-            fullPositon = NO;
+            fullPosition = NO;
             
             if (!hasSmall) {
                 // Only medium
@@ -248,7 +242,7 @@ static const NSString *kDefaultStartDetent = @"small";
             maxPosition = _partialViewYPosition;
             maxState = partial;
             mediumPosition = NO;
-            fullPositon = NO;
+            fullPosition = NO;
             
             if ([startDetent isEqual:@"medium"] || [startDetent isEqual:@"large"]) {
                 startDetent = @"small";
@@ -274,7 +268,7 @@ static const NSString *kDefaultStartDetent = @"small";
         minState = full;
         mediumPosition = NO;
         smallPosition = NO;
-        fullPositon = YES;
+        fullPosition = YES;
         startDetent = @"large";
     }
 
@@ -358,13 +352,13 @@ static const NSString *kDefaultStartDetent = @"small";
     
     
     if (self.lastStatus == partial) {
-                bottomIntent = ((height)-130)+safeAreaInset.bottom;
+                bottomIntent = ((height)-kDefaultPartialHeight)+safeAreaInset.bottom;
             }
     else if (self.lastStatus == expanded) {
                 bottomIntent = ((height/2))+safeAreaInset.bottom;
     }
     else {
-                bottomIntent = safeAreaInset.bottom + 100;
+                bottomIntent = safeAreaInset.bottom + kDefaultFullYPosition;
     }
     
     if ([view respondsToSelector:@selector(setScrollEnabled:)]){
@@ -373,16 +367,16 @@ static const NSString *kDefaultStartDetent = @"small";
                 UITableView *thisTableView = (UITableView *)view;
                 topInset = thisTableView.contentInset.top;
 
-                scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent - 20, 0);
-                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
+                scrollBarinsets = UIEdgeInsetsMake(topInset + kScrollIndicatorInsetAdjustment, 0, bottomIntent - kScrollIndicatorInsetAdjustment, 0);
+                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - kScrollIndicatorInsetAdjustment, 0);
                 [thisTableView setContentInset:insets];
                 [thisTableView setScrollIndicatorInsets:scrollBarinsets];
             }
             else if ([view isKindOfClass:[UIScrollView class]]){
                 UIScrollView *thisTableView = (UIScrollView *)view;
                 topInset = thisTableView.contentInset.top;
-                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
-                scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+                insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - kScrollIndicatorInsetAdjustment, 0);
+                scrollBarinsets = UIEdgeInsetsMake(topInset + kScrollIndicatorInsetAdjustment, 0, bottomIntent, 0);
                 [thisTableView setContentInset:insets];
                 [thisTableView setScrollIndicatorInsets:scrollBarinsets];
             }
@@ -398,7 +392,7 @@ static const NSString *kDefaultStartDetent = @"small";
                         UITableView *thisTableView = (UITableView *)eachView;
                         topInset = thisTableView.contentInset.top;
                         insets = UIEdgeInsetsMake(topInset, 0, bottomIntent, 0);
-                        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+                        scrollBarinsets = UIEdgeInsetsMake(topInset + kScrollIndicatorInsetAdjustment, 0, bottomIntent, 0);
 
                         [thisTableView setContentInset:insets];
                         [thisTableView setScrollIndicatorInsets:scrollBarinsets];
@@ -406,8 +400,8 @@ static const NSString *kDefaultStartDetent = @"small";
                     else if ([eachView isKindOfClass:[UIScrollView class]]){
                         UIScrollView *thisTableView = (UIScrollView *)eachView;
                         topInset = thisTableView.contentInset.top;
-                        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - 20, 0);
-                        scrollBarinsets = UIEdgeInsetsMake(topInset + 20, 0, bottomIntent, 0);
+                        insets = UIEdgeInsetsMake(topInset, 0, bottomIntent - kScrollIndicatorInsetAdjustment, 0);
+                        scrollBarinsets = UIEdgeInsetsMake(topInset + kScrollIndicatorInsetAdjustment, 0, bottomIntent, 0);
 
                         [thisTableView setContentInset:insets];
                         [thisTableView setScrollIndicatorInsets:scrollBarinsets];
@@ -684,7 +678,7 @@ static const NSString *kDefaultStartDetent = @"small";
                 if (mediumPosition){
                     state = expanded;
                 }
-                else if (fullPositon){
+                else if (fullPosition){
                     state = full;
                 }
                 else {
@@ -731,7 +725,7 @@ static const NSString *kDefaultStartDetent = @"small";
                         state = partial;
      
                     } else if (endLocation < _expandedViewYPosition &&
-                               director == up && fullPositon) {
+                               director == up && fullPosition) {
                         if (maxPosition == _fullViewYPosition){
                             state = full;
                         }
@@ -747,7 +741,7 @@ static const NSString *kDefaultStartDetent = @"small";
                         state = expanded;
                     }
                     else {
-                        if (fullPositon){
+                        if (fullPosition){
                             state = full;
                         }
                         else {
@@ -850,7 +844,7 @@ static const NSString *kDefaultStartDetent = @"small";
                                 }
 
                                 
-                                [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+                                [UIView animateWithDuration:kDetentTransitionDuration delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
                                     [myParentProxy backgroundView].backgroundColor = viewBackgroundColor;
                                     } completion:^(BOOL finished) {
                                         if (backgroundViewHidden == YES && [myParentProxy backgroundView] != nil){
