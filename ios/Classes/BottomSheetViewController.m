@@ -148,13 +148,12 @@
     viewBackgroundColor = [UIColor clearColor];
     dimmedViewBackgroundColor = [[TiUtils colorValue:@"#22000000"] _color];
     
-    
+    // Setup custom heights
     if ([myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]){
         self.partialViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetSmallHeight"]];
     }
     if ([myParentProxy valueForKey:@"nonSystemSheetMediumHeight"]){
         self.expandedViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetMediumHeight"]];
-
     }
     if ([myParentProxy valueForKey:@"nonSystemSheetLargeHeight"]){
         self.fullViewYPosition = [UIScreen mainScreen].bounds.size.height - [TiUtils intValue:[myParentProxy valueForKey:@"nonSystemSheetLargeHeight"]];
@@ -171,13 +170,13 @@
     UIViewController<TiControllerContainment> *topContainerController = [[[TiApp app] controller] topContainerController];
     safeAreaInset = [[topContainerController hostingView] safeAreaInsets];
     
-    
+    // Default positions
     maxPosition = _fullViewYPosition;
     maxState = full;
-
     minPosition = _partialViewYPosition;
     minState = partial;
 
+    // Setup startDetent
     if ([myParentProxy valueForKey:@"startDetent"]){
         startDetent = [TiUtils stringValue:[myParentProxy valueForKey:@"startDetent"]];
     }
@@ -185,66 +184,71 @@
         startDetent = @"small";
     }
     
+    // Setup detents with boolean flags for clarity
     if ([myParentProxy valueForKey:@"detents"]){
         userDetents = [myParentProxy valueForKey:@"detents"];
         
-        if ([TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES]){
+        BOOL hasLarge = [TiUtils boolValue:[userDetents valueForKey:@"large"] def:YES];
+        BOOL hasMedium = [TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES];
+        BOOL hasSmall = [TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES];
+        
+        if (hasLarge) {
             maxPosition = _fullViewYPosition;
             maxState = full;
-            if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && ![TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
+            
+            if (!hasSmall && !hasMedium) {
+                // Only large
                 mediumPosition = NO;
                 smallPosition = NO;
-
                 minPosition = _fullViewYPosition;
                 minState = full;
                 startDetent = @"large";
             }
-            else {
-                if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && [TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    minPosition = _expandedViewYPosition;
-                    minState = expanded;
-                    smallPosition = NO;
-
-                    if (![startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"]){
-                        startDetent = @"medium";
-                    }
-                }
-                else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES] && ![TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-                    mediumPosition = NO;
-
-                    if ([startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"]){
-                        startDetent = @"small";
-                    }
-                }
-            }
-        }
-        else if ([TiUtils boolValue:[userDetents valueForKey:@"medium"] def:YES]){
-            maxPosition = _expandedViewYPosition;
-            maxState = expanded;
-            fullPositon = NO;
-
-            if (![TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
+            else if (!hasSmall && hasMedium) {
+                // Large + medium
                 minPosition = _expandedViewYPosition;
                 minState = expanded;
                 smallPosition = NO;
-
-                if ([startDetent isEqual:@"small"] || [startDetent isEqual:@"large"]){
+                if (![startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"]) {
+                    startDetent = @"medium";
+                }
+            }
+            else if (hasSmall && !hasMedium) {
+                // Large + small
+                mediumPosition = NO;
+                if ([startDetent isEqual:@"medium"] && ![startDetent isEqual:@"large"]) {
+                    startDetent = @"small";
+                }
+            }
+        }
+        else if (hasMedium) {
+            maxPosition = _expandedViewYPosition;
+            maxState = expanded;
+            fullPositon = NO;
+            
+            if (!hasSmall) {
+                // Only medium
+                minPosition = _expandedViewYPosition;
+                minState = expanded;
+                smallPosition = NO;
+                if ([startDetent isEqual:@"small"] || [startDetent isEqual:@"large"]) {
                     startDetent = @"medium";
                 }
             }
             else {
-                if ([startDetent isEqual:@"large"]){
+                // Medium + small
+                if ([startDetent isEqual:@"large"]) {
                     startDetent = @"medium";
                 }
             }
         }
-        else if ([TiUtils boolValue:[userDetents valueForKey:@"small"] def:YES]){
+        else if (hasSmall) {
             maxPosition = _partialViewYPosition;
             maxState = partial;
             mediumPosition = NO;
             fullPositon = NO;
-
-            if ([startDetent isEqual:@"medium"] || [startDetent isEqual:@"large"]){
+            
+            if ([startDetent isEqual:@"medium"] || [startDetent isEqual:@"large"]) {
                 startDetent = @"small";
             }
         }

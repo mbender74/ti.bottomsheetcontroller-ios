@@ -461,32 +461,20 @@
     }
   }
   [viewController.view removeObserver:self forKeyPath:@"safeAreaInsets"];
-  //[[NSNotificationCenter defaultCenter] removeObserver:self];
- // [self performSelector:@selector(release) withObject:nil afterDelay:0.5];
- // [bottomSheetclosingCondition lock];
+  
   nonSystemSheetAutomaticStartPositionFromContentViewHeight = NO;
- // [bottomSheetclosingCondition signal];
- // [bottomSheetclosingCondition unlock];
   isDismissing = NO;
   bottomSheetInitialized = NO;
   eventFired = NO;
   bottomSheet.delegate = nil;
   addScrollInsetTop = NO;
   additionalBottomInset = 0;
-  myScrollView = nil;
-  backgroundView = nil;
-  customBottomSheet = nil;
-  viewController = nil;
-  closeButtonView = nil;
-  closeButtonProxy = nil;
-  currentTiBottomSheet = nil;
- // bottomSheetclosingCondition = nil;
-  contentViewProxy = nil;
-  centerProxy = nil;
+  
   if (@available(iOS 15, *)) {
     [_detents release];
     [_largestUndimmedDetentIdentifier release];
   }
+  
   RELEASE_TO_NIL(myScrollView);
   RELEASE_TO_NIL(backgroundView);
   RELEASE_TO_NIL(customBottomSheet);
@@ -494,7 +482,6 @@
   RELEASE_TO_NIL(closeButtonView);
   RELEASE_TO_NIL(closeButtonProxy);
   RELEASE_TO_NIL(currentTiBottomSheet);
-  //RELEASE_TO_NIL(bottomSheetclosingCondition);
   RELEASE_TO_NIL(contentViewProxy);
   RELEASE_TO_NIL(centerProxy);
   [self forgetSelf];
