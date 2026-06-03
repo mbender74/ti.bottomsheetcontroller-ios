@@ -537,42 +537,23 @@
             
             id childWindowProxyHeight = [childWindowProxy valueForUndefinedKey:@"height"];
             if (childWindowProxyHeight) {
-                if ([childWindowProxyHeight isEqual:@"SIZE"]){
-                    
-                }
-                else if ([childWindowProxyHeight isEqual:@"FILL"]){
-                    
-                }
-                else {
-                    self.fixedHeight = YES;
-                }
+                self.fixedHeight = ![childWindowProxyHeight isEqual:@"SIZE"] && ![childWindowProxyHeight isEqual:@"FILL"];
             }
 
-            
-            
             realContentHeight = [(TiWindowProxy *)childWindowProxy view].frame.size.height;
             if (realContentHeight >= [UIScreen mainScreen].bounds.size.height){
-                realContentHeight = realContentHeight - 200;
+                realContentHeight -= 200;
             }
         }
         else {
             id contentViewProxyHeight = [contentViewProxy valueForUndefinedKey:@"height"];
             if (contentViewProxyHeight) {
-                if ([contentViewProxyHeight isEqual:@"SIZE"]){
-                    
-                }
-                else if ([contentViewProxyHeight isEqual:@"FILL"]){
-                    
-                }
-                else {
-                    self.fixedHeight = YES;
-                }
+                self.fixedHeight = ![contentViewProxyHeight isEqual:@"SIZE"] && ![contentViewProxyHeight isEqual:@"FILL"];
             }
-
 
             realContentHeight = [(TiWindowProxy *)contentViewProxy view].frame.size.height;
             if (realContentHeight >= [UIScreen mainScreen].bounds.size.height){
-                realContentHeight = realContentHeight - 200;
+                realContentHeight -= 200;
             }
         }
                
@@ -590,15 +571,7 @@
       
       id contentViewProxyHeight = [contentViewProxy valueForUndefinedKey:@"height"];
       if (contentViewProxyHeight) {
-          if ([contentViewProxyHeight isEqual:@"SIZE"]){
-              
-          }
-          else if ([contentViewProxyHeight isEqual:@"FILL"]){
-              
-          }
-          else {
-              self.fixedHeight = YES;
-          }
+          self.fixedHeight = ![contentViewProxyHeight isEqual:@"SIZE"] && ![contentViewProxyHeight isEqual:@"FILL"];
       }
 
       /*
