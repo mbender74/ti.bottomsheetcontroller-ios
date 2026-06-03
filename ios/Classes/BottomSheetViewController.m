@@ -9,6 +9,14 @@
 #import "BottomSheetViewController.h"
 #import "TiBottomsheetcontrollerProxy.h"
 
+// Constants
+static const CGFloat kDefaultPartialHeight = 130.0;
+static const CGFloat kDefaultFullYPosition = 100.0;
+static const CGFloat kAnimationDuration = 0.35;
+static const CGFloat kSpringDamping = 1.0;
+static const CGFloat kInitialSpringVelocity = 1.0;
+static const NSString *kDefaultStartDetent = @"small";
+
 
 @interface BottomSheetViewController (){
     TiBottomsheetcontrollerProxy *myParentProxy;
@@ -74,8 +82,8 @@
     startDetent = nil;
     detentString = nil;
     director = up;
-    _fullViewYPosition = 100;
-    _partialViewYPosition = [UIScreen mainScreen].bounds.size.height - 130;
+    _fullViewYPosition = kDefaultFullYPosition;
+    _partialViewYPosition = [UIScreen mainScreen].bounds.size.height - kDefaultPartialHeight;
     _expandedViewYPosition = ceilf([UIScreen mainScreen].bounds.size.height / 2);
     
     self.fullViewYPosition = _fullViewYPosition;
@@ -94,10 +102,9 @@
 
     __weak __typeof(self)weakSelf = self;
     
-    
     director = up;
     
-    [UIView animateWithDuration:0.35 delay:0 usingSpringWithDamping:1 initialSpringVelocity:1 options:UIViewAnimationOptionCurveEaseOut animations:^{
+    [UIView animateWithDuration:kAnimationDuration delay:0 usingSpringWithDamping:kSpringDamping initialSpringVelocity:kInitialSpringVelocity options:UIViewAnimationOptionCurveEaseOut animations:^{
         if ([myParentProxy backgroundView] != nil){
             [myParentProxy backgroundView].backgroundColor = viewBackgroundColor;
         }
@@ -115,25 +122,20 @@
         windowRect = customView.frame;
 
         if (customSheetScrollView){
-                customViewRect = customSheetScrollView.frame;
-                customViewRect.size.height = self.view.frame.size.height - startY;
-                customSheetScrollView.frame = customViewRect;
-                customView.frame = windowRect;
-
-            if (myParentProxy.fixedHeight == NO){
-                [myParentProxy.viewProxy reposition];
-                [myParentProxy.viewProxy layoutChildrenIfNeeded];
-            }
+            customViewRect = customSheetScrollView.frame;
+            customViewRect.size.height = self.view.frame.size.height - startY;
+            customSheetScrollView.frame = customViewRect;
+            customView.frame = windowRect;
         }
         else {
-            if (myParentProxy.fixedHeight == NO){
-                customViewRect = customView.frame;
-                customViewRect.size.height = self.view.frame.size.height - startY;
-                customView.frame = customViewRect;
+            customViewRect = customView.frame;
+            customViewRect.size.height = self.view.frame.size.height - startY;
+            customView.frame = customViewRect;
+        }
 
-                [myParentProxy.viewProxy reposition];
-                [myParentProxy.viewProxy layoutChildrenIfNeeded];
-            }
+        if (myParentProxy.fixedHeight == NO){
+            [myParentProxy.viewProxy reposition];
+            [myParentProxy.viewProxy layoutChildrenIfNeeded];
         }
 
     }];
@@ -181,7 +183,7 @@
         startDetent = [TiUtils stringValue:[myParentProxy valueForKey:@"startDetent"]];
     }
     else {
-        startDetent = @"small";
+        startDetent = kDefaultStartDetent;
     }
     
     // Setup detents with boolean flags for clarity
