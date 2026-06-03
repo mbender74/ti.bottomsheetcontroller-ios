@@ -108,7 +108,8 @@
                 return @"large";
             }
             else {
-                return @"none";
+                // Custom detent: iOS 16+ returns the user-defined key, iOS 15 returns height-based identifier
+                return bottomSheet.selectedDetentIdentifier;
             }
         }
     }
@@ -132,6 +133,19 @@
             }
             else if ([identifier isEqual: @"medium"] && ([bottomSheet.detents containsObject:[UISheetPresentationControllerDetent mediumDetent]])){
                 newDetent = UISheetPresentationControllerDetentIdentifierMedium;
+            }
+            else {
+                // Custom detent: check if identifier matches a custom detent key
+                NSDictionary *customDetents = [self valueForKey:@"customDetents"];
+                if (customDetents && [customDetents objectForKey:identifier]) {
+                    if (@available(iOS 16.0, macCatalyst 16.0, *)) {
+                        newDetent = identifier;  // iOS 16+: the key IS the identifier
+                    }
+                    else {
+                        CGFloat value = [TiUtils floatValue:[customDetents objectForKey:identifier]];
+                        newDetent = UISheetPresentationControllerDetentIdentifierCustom(value);
+                    }
+                }
             }
             [bottomSheet animateChanges:^{
                 bottomSheet.selectedDetentIdentifier = newDetent;
@@ -795,16 +809,20 @@
                   
                   for (NSString* key in customDetents.allKeys){
                       CGFloat value = [TiUtils floatValue:[customDetents objectForKey:key]];
-                      
-                      //NSLog(@" customDetent %@ : %f",key,value);
 
-                      if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                      if (@available(iOS 16.0, macCatalyst 16.0, *)) {
+                          // iOS 16+: use public API with user-defined key as identifier
+                          [detentsOfController addObject:[UISheetPresentationControllerDetent customDetentWithKey:key height:value]];
+
+                          if ([[TiUtils stringValue:[self valueForKey:@"startDetent"]] isEqual: key]){
+                              initalSelectedDetent = key;  // The key IS the identifier on iOS 16+
+                          }
+                      }
+                      else if (@available(iOS 15.0, macCatalyst 15.0, *)) {
+                          // iOS 15 fallback: height-based identifier via private API
                           [detentsOfController addObject:[UISheetPresentationControllerDetent customDetentWithHeight:value]];
 
-                          if ( [[TiUtils stringValue:[self valueForKey:@"startDetent"]] isEqual: key] ){
-                              
-                              //NSLog(@" startDetent is customDetent %@ : %f",key,value);
-                              
+                          if ([[TiUtils stringValue:[self valueForKey:@"startDetent"]] isEqual: key]){
                               initalSelectedDetent = UISheetPresentationControllerDetentIdentifierCustom(value);
                           }
                       }
@@ -1431,16 +1449,24 @@
 
 }
 
-- (void)sheetPresentationControllerDidChangeSelectedDetentIdentifier :(UISheetPresentationController *)bottomSheetPresentationController API_AVAILABLE(ios(15.0),macCatalyst(15.0))
+- (void)sheetPresentationControllerDidChangeSelectedDetentIdentifier:(UISheetPresentationController *)bottomSheetPresentationController API_AVAILABLE(ios(15.0),macCatalyst(15.0))
 {
-    if (bottomSheetPresentationController.selectedDetentIdentifier == UISheetPresentationControllerDetentIdentifierMedium){
-        NSDictionary *detentObject = [NSDictionary dictionaryWithObjectsAndKeys:@"medium", @"selectedDetentIdentifier", nil];
-        [self fireEvent:@"detentChange" withObject:detentObject];
+    UISheetPresentationControllerDetentIdentifier identifier = bottomSheetPresentationController.selectedDetentIdentifier;
+    
+    NSString *detentName;
+    if (identifier == UISheetPresentationControllerDetentIdentifierMedium){
+        detentName = @"medium";
     }
-    else if (bottomSheetPresentationController.selectedDetentIdentifier == UISheetPresentationControllerDetentIdentifierLarge){
-        NSDictionary *detentObject = [NSDictionary dictionaryWithObjectsAndKeys:@"large", @"selectedDetentIdentifier", nil];
-        [self fireEvent:@"detentChange" withObject:detentObject];
+    else if (identifier == UISheetPresentationControllerDetentIdentifierLarge){
+        detentName = @"large";
     }
+    else {
+        // Custom detent: iOS 16+ returns the user-defined key, iOS 15 returns height-based identifier
+        detentName = identifier;
+    }
+    
+    NSDictionary *detentObject = [NSDictionary dictionaryWithObjectsAndKeys:detentName, @"selectedDetentIdentifier", nil];
+    [self fireEvent:@"detentChange" withObject:detentObject];
 }
 
 - (BOOL)presentationControllerShouldDismiss:(UISheetPresentationController *)bottomSheetPresentationController API_AVAILABLE(ios(15.0),macCatalyst(15.0))
