@@ -1,8 +1,9 @@
-# Titanium BottomSheetController iOS Module
+# Titanium Mobile SDK BottomSheetController iOS Module
+(https://titaniumsdk.com/)
 
 Created by **Marc Bender** | Version 1.3.0 | iOS 15+ & Mac Catalyst compatible
 
-A powerful Titanium module for bottom sheets on iOS with two implementation modes:
+A powerful Titanium Mobile iOS module for bottom sheets on iOS with two implementation modes:
 - **System Sheet** (native iOS 15+ `UISheetPresentationController`)
 - **Custom Sheet** (custom implementation for maximum control and backwards compatibility)
 
